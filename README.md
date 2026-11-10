@@ -4,12 +4,12 @@ A modular TypeScript toolkit for defining, distributing, and executing AI agents
 
 ## Packages
 
-| Package                                                       | Description                                                       | JSR                                                |
-| :------------------------------------------------------------ | :---------------------------------------------------------------- | :------------------------------------------------- |
-| [`@ekisa/agent-spec`](https://jsr.io/@ekisa/agent-spec)       | Agent manifest schemas, types, and validation.                    | ![JSR](https://jsr.io/badges/@ekisa/agent-spec)    |
-| [`@ekisa/agent-skills`](https://jsr.io/@ekisa/agent-skills)   | Discovery and parsing of [Agent Skills](https://agentskills.io/). | ![JSR](https://jsr.io/badges/@ekisa/agent-skills)  |
-| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci)         | Agent artifact distribution through OCI registries.               | ![JSR](https://jsr.io/badges/@ekisa/agent-oci)     |
-| [`@ekisa/agent-runtime`](https://jsr.io/@ekisa/agent-runtime) | Agent execution engine powered by Vercel AI SDK.                  | ![JSR](https://jsr.io/badges/@ekisa/agent-runtime) |
+| Package                                                       | JSR                                                |
+| :------------------------------------------------------------ | :------------------------------------------------- |
+| [`@ekisa/agent-spec`](https://jsr.io/@ekisa/agent-spec)       | ![JSR](https://jsr.io/badges/@ekisa/agent-spec)    |
+| [`@ekisa/agent-skills`](https://jsr.io/@ekisa/agent-skills)   | ![JSR](https://jsr.io/badges/@ekisa/agent-skills)  |
+| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci)         | ![JSR](https://jsr.io/badges/@ekisa/agent-oci)     |
+| [`@ekisa/agent-runtime`](https://jsr.io/@ekisa/agent-runtime) | ![JSR](https://jsr.io/badges/@ekisa/agent-runtime) |
 
 ## Requirements
 
@@ -44,29 +44,29 @@ apiVersion: agent.ekisa.com.co/v1
 kind: Agent
 
 metadata:
-  name: example-agent
-  version: 1.0.0
-  description: Example AI agent
+    name: example-agent
+    version: 1.0.0
+    description: Example AI agent
 
 spec:
-  instructions:
-    file: ./instructions/system.md
+    instructions:
+        file: ./instructions/system.md
 
-  locale:
-    language: en
-    timezone: UTC
+    locale:
+        language: en
+        timezone: UTC
 
-  skills: []
+    skills: []
 
-  tools: []
+    tools: []
 
-  model:
-    suggestedModel: deepseek/
-    temperature: 0
+    model:
+        suggestedModel: deepseek/
+        temperature: 0
 
-  runtime:
-    maxToolIterations: 6
-    timeoutMs: 60000
+    runtime:
+        maxToolIterations: 6
+        timeoutMs: 60000
 ```
 
 Use `@ekisa/agent-spec` to parse, validate, and define manifests programmatically.

@@ -1,12 +1,24 @@
 {
   "name": "agent",
-  "module": "index.ts",
-  "type": "module",
+  "private": true,
+  "workspaces": [
+    "agent-spec",
+    "agent-skills",
+    "agent-oci",
+    "agent-runtime"
+  ],
   "scripts": {
-    "typecheck": "bun check"
+    "typecheck": "bun check",
+    "lint": "oxlint --type-aware .",
+    "lint:fix": "oxlint --type-aware --fix .",
+    "fmt": "oxfmt .",
+    "fmt:check": "oxfmt --check ."
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2006"
   },
   "peerDependencies": {
     "typescript": "^7"

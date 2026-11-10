@@ -1,93 +1,142 @@
-# agents
+# agent
 
-A modular TypeScript toolkit for defining, distributing, and executing AI agents.
+[![CI](https://github.com/ekisa-team/agent/actions/workflows/ci.yaml/badge.svg)](https://github.com/ekisa-team/agent/actions/workflows/ci.yaml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Native ESM](https://img.shields.io/badge/Native-ESM-F7DF1E?logo=javascript&logoColor=black)](#requirements)
+
+A modular TypeScript toolkit implementing the **Ekisa Specification for Agents (EAS)**. A declarative standard for defining, distributing via OCI, and executing AI agents with client side tool ownership.
 
 ## Packages
 
-| Package                                                       | JSR                                                |
-| :------------------------------------------------------------ | :------------------------------------------------- |
-| [`@ekisa/agent-spec`](https://jsr.io/@ekisa/agent-spec)       | ![JSR](https://jsr.io/badges/@ekisa/agent-spec)    |
-| [`@ekisa/agent-skills`](https://jsr.io/@ekisa/agent-skills)   | ![JSR](https://jsr.io/badges/@ekisa/agent-skills)  |
-| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci)         | ![JSR](https://jsr.io/badges/@ekisa/agent-oci)     |
-| [`@ekisa/agent-runtime`](https://jsr.io/@ekisa/agent-runtime) | ![JSR](https://jsr.io/badges/@ekisa/agent-runtime) |
+| Package                                                       | JSR                                                                                       |
+| :------------------------------------------------------------ | :---------------------------------------------------------------------------------------- |
+| [`@ekisa/agent-spec`](https://jsr.io/@ekisa/agent-spec)       | [![JSR](https://jsr.io/badges/@ekisa/agent-spec)](https://jsr.io/@ekisa/agent-spec)       |
+| [`@ekisa/agent-skills`](https://jsr.io/@ekisa/agent-skills)   | [![JSR](https://jsr.io/badges/@ekisa/agent-skills)](https://jsr.io/@ekisa/agent-skills)   |
+| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci)         | [![JSR](https://jsr.io/badges/@ekisa/agent-oci)](https://jsr.io/@ekisa/agent-oci)         |
+| [`@ekisa/agent-runtime`](https://jsr.io/@ekisa/agent-runtime) | [![JSR](https://jsr.io/badges/@ekisa/agent-runtime)](https://jsr.io/@ekisa/agent-runtime) |
 
 ## Requirements
 
-- [Bun](https://bun.sh/) with workspace support.
-- [JSR](https://jsr.io/) account for publishing.
-- TypeScript with native ESM support.
+- [Bun](https://bun.sh/) (v1.1+ with workspace support)
+- TypeScript (v7.0+) with native ESM
 
-No bundler or compilation step is required. JSR publishes raw TypeScript.
+No bundler, transpilation, or build step is required. Packages are published directly as raw TypeScript to [JSR](https://jsr.io/).
 
 ## Development
 
-### 1. Install dependencies
+### Install dependencies
 
 ```bash
 bun install
 ```
 
-### 2. Run tests
+### Run typechecks, linter and tests
 
 ```bash
-bun test
+bun run check
+bun run lint
+bun run test
 ```
 
-Run tests across all workspace packages from the repository root.
+## The Ekisa Specification for Agents (EAS)
 
-### 3. Define an agent
+The **Ekisa Specification for Agents** defines an autonomous agent as an isolated, self contained directory governed by an `agent.yaml` manifest. It standardizes identity, procedural skills, tool contracts, and execution hints:
 
-Agents are described using an `agent.yaml` manifest:
+```text
+my-agent/
+├── agent.yaml                       # Canonical manifest
+├── instructions/
+│   └── system.md                    # Core persona & guardrails
+├── skills/
+│   └── customer-support/
+│       └── SKILL.md                 # Procedural domain workflows
+└── tools/
+    └── lookup-account.yaml          # Declarative HTTP/custom tool contracts
+```
+
+### Manifest example (`agent.yaml`)
 
 ```yaml
 apiVersion: agent.ekisa.com.co/v1
 kind: Agent
 
 metadata:
-    name: example-agent
+    name: assistant
     version: 1.0.0
-    description: Example AI agent
+    displayName: "General assistant"
+    description: Example AI agent demonstrating the Ekisa Specification.
+    tags: [support, enterprise]
 
 spec:
+    locale:
+        language: es-CO
+        timezone: America/Bogota
+
+    # Instructions support either a relative file path or inline markdown text
     instructions:
         file: ./instructions/system.md
-
-    locale:
-        language: en
-        timezone: UTC
-
-    skills: []
-
-    tools: []
+        # inline: |
+        #   Eres un asistente útil y conciso...
 
     model:
-        suggestedModel: deepseek/
+        suggested: openrouter/deepseek/deepseek-v4.1-flash
         temperature: 0
+        reasoningEffort: low
+        maxTokens: 2048
 
     runtime:
-        maxToolIterations: 6
+        maxSteps: 6
         timeoutMs: 60000
+
+    capabilities:
+        knowledge:
+            enabled: true
+            sources:
+                - institutional-kb
+        webSearch:
+            enabled: false
+            maxResults: 5
+        computerUse:
+            enabled: false
+        codeInterpreter:
+            enabled: false
+
+    skills:
+        - ./skills/customer-support
+
+    tools:
+        - ./tools/lookup-account.yaml
 ```
 
-Use `@ekisa/agent-spec` to parse, validate, and define manifests programmatically.
+> [!NOTE]
+> Only `knowledge` is resolved by `@ekisa/agent-runtime`. The `webSearch`, `computerUse`, and `codeInterpreter` blocks are schema validated by `@ekisa/agent-spec` but resolve to no-op in the default runtime, regardless of `enabled`. They are reserved for upcoming platform releases.
 
-## Distribution
+## Client side tool execution
 
-In principle, agents are distributed as versioned OCI artifacts through registries such as GHCR, Harbor, and Docker Hub.
+Under the Ekisa specification, tool execution lives on the consumer application, not on a central proxy. Tool manifests declare contracts (parameters and HTTP templates), while consumer apps inject credentials locally at runtime:
 
 ```typescript
 import { pullAgent } from "@ekisa/agent-oci";
+import { createRuntime, httpTool } from "@ekisa/agent-runtime";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-const agent = await pullAgent("ghcr.io/ekisa/agents/example:1.0.0");
-```
+// Pull immutable bundle from an OCI registry
+const bundle = await pullAgent("ghcr.io/ekisa/agents/assistant:1.0.0");
 
-The OCI client verifies artifact digests and extracts the agent bundle into memory.
+// Compile declarative tools locally with private secrets
+const tools = {
+    lookup_account: httpTool(bundle.manifest.spec.tools[0], {
+        headers: { Authorization: `Bearer ${process.env.INTERNAL_API_KEY}` },
+    }),
+};
 
-## Publishing
+// Start execution runtime
+const runtime = createRuntime({
+    bundle,
+    model: myProvider(bundle.manifest.spec.model.suggested),
+    tools,
+});
 
-Publish each package independently from its directory. For example:
-
-```bash
-cd packages/agent-spec
-bunx jsr publish
+// Stream responses
+const stream = await runtime.stream(messages);
 ```

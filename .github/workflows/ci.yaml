@@ -41,6 +41,9 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      - name: Nodecheck
+        run: bun run nodecheck
+
       - name: Lint
         run: bun run lint
 

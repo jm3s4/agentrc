@@ -1,4 +1,3 @@
-import { basename, extname } from 'node:path';
 import * as v from 'valibot';
 import { ParseError } from '../errors';
 import {
@@ -27,6 +26,17 @@ const MIME_MAP: Record<string, string> = {
     '.js': 'application/javascript',
     '.ts': 'application/typescript',
 };
+
+function basename(p: string): string {
+    const i = p.lastIndexOf('/');
+    return i >= 0 ? p.slice(i + 1) : p;
+}
+
+function extname(p: string): string {
+    const base = basename(p);
+    const dot = base.lastIndexOf('.');
+    return dot > 0 ? base.slice(dot) : '';
+}
 
 function inferMediaType(filePath: string): string {
     const ext = extname(filePath).toLowerCase();

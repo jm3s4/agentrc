@@ -1,8 +1,8 @@
 import * as v from 'valibot';
 import { SkillMetadataSchema, type SkillMetadata, type SkillMetadataInput, type SkillSummary } from './schema';
 
-export * from './loader';
 export * from './parser';
+export * from './resolver';
 export * from './schema';
 export * from './skill';
 

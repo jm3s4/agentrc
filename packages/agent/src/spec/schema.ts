@@ -38,6 +38,20 @@ const SemverSchema = v.pipe(
     v.regex(SEMVER_REGEX, "Version must be a valid SemVer string (e.g. '1.4.0', '2.0.0-beta.1')"),
 );
 
+// Skill definitions
+
+export const SkillRefSchema = v.union([
+    v.string(),
+    v.strictObject({
+        name: v.pipe(
+            v.string(),
+            v.regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+            v.maxLength(64, 'Skill name must not exceed 64 characters'),
+        ),
+        version: SemverSchema,
+    }),
+]);
+
 // Tool definitions
 
 export const HttpExecutionSchema = v.strictObject({
@@ -163,7 +177,7 @@ export const AgentSpecSchema = v.strictObject({
     model: ModelSchema,
     runtime: v.optional(RuntimeSchema, v.parse(RuntimeSchema, {})),
     capabilities: v.optional(CapabilitiesSchema),
-    skills: v.optional(v.array(v.string()), []),
+    skills: v.optional(v.array(SkillRefSchema), []),
     tools: v.optional(v.array(ToolRefSchema), []),
 });
 

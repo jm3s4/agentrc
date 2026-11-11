@@ -8,9 +8,10 @@ A modular TypeScript toolkit implementing the **Ekisa Specification for Agents (
 
 ## Packages
 
-| Package                                       | JSR                                                                              |
-| :-------------------------------------------- | :------------------------------------------------------------------------------- |
-| [`@ekisa/agent`](https://jsr.io/@ekisa/agent) | [![JSR](https://jsr.io/badges/@ekisa/agent)](https://jsr.io/badges/@ekisa/agent) |
+| Package                                                         | JSR                                                                                                |
+| :-------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
+| [`@ekisa/agent`](https://jsr.io/@ekisa/agent)                   | [![JSR](https://jsr.io/badges/@ekisa/agent)](https://jsr.io/badges/@ekisa/agent)                   |
+| [`@ekisa/agent-artifact`](https://jsr.io/@ekisa/agent-artifact) | [![JSR](https://jsr.io/badges/@ekisa/agent-artifact)](https://jsr.io/badges/@ekisa/agent-artifact) |
 
 ## Requirements
 
@@ -107,7 +108,7 @@ You are a general-purpose assistant for enterprise support. Answer concisely and
 ```
 
 > [!IMPORTANT]
-> Strings in `spec.tools` are paths inside the bundle root (e.g. `./tools/lookup-account.yaml`). They're resolved by `@ekisa/agent-bundle` when the artifact is loaded; the parsing layer never reads files directly. Inline tool definitions are also accepted for tools that are not backed by a file in the bundle.
+> Strings in `spec.tools` are paths inside the artifact root (e.g. `./tools/lookup-account.yaml`). They're resolved by `@ekisa/agent-artifact` when the artifact is loaded; the parsing layer never reads files directly. Inline tool definitions are also accepted for tools that are not backed by a file in the artifact.
 
 > [!TIP]
 > `spec.model` and `metadata` are extensible: both accept provider-specific and organization-specific fields that are not declared in the schema. Use them to carry model parameters (`responseFormat`, `cacheControl`, ...) or metadata (`owner`, `contact`, ...) without waiting for a schema bump.
@@ -159,10 +160,10 @@ Rules the runtime follows:
 The template language, including the exact character set permitted for `name` and `NAME` is defined in the EAS specification and enforced by the runtime, not by the manifest schema. Manifests that contain literal `{{` sequences in header or body values should be interpreted as intentional only if they also resolve at runtime; otherwise they're malformed.
 
 > [!IMPORTANT]
-> Never write a credential as a literal. Any value in a tool file becomes part of the published bundle artifact. Sensitive headers must use the `{{secret.NAME}}` namespace:
+> Never write a credential as a literal. Any value in a tool file becomes part of the published artifact. Sensitive headers must use the `{{secret.NAME}}` namespace:
 >
 > ```yaml
-> # Correct: resolved by the runtime, never shipped in the bundle.
+> # Correct: resolved by the runtime, never shipped in the artifact.
 > Authorization: "Bearer {{secret.INTERNAL_API_KEY}}"
 >
 > # Wrong: the credential is now baked into the artifact forever.

@@ -2,7 +2,10 @@
   "$schema": "https://jsr.io/schema/config-file.v1.json",
   "name": "@ekisa/agent",
   "version": "0.1.0",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node/index.ts"
+  },
   "publish": {
     "include": ["src/**/*.ts", "README.md", "jsr.json"]
   }

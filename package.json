@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "typecheck": "bun check",
+    "nodecheck": "bash scripts/check-node-imports.sh",
     "lint": "oxlint --type-aware .",
     "lint:fix": "oxlint --type-aware --fix .",
     "fmt": "oxfmt .",

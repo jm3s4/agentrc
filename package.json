@@ -12,13 +12,18 @@
     "lint": "oxlint --type-aware .",
     "lint:fix": "oxlint --type-aware --fix .",
     "fmt": "oxfmt .",
-    "fmt:check": "oxfmt --check ."
+    "fmt:check": "oxfmt --check .",
+    "test": "bun test",
+    "test:update-snapshots": "bun test --update-snapshots",
+    "taze": "taze minor -wIr",
+    "taze:major": "taze major -wIr"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
-    "oxlint-tsgolint": "^7.0.2006"
+    "oxlint-tsgolint": "^7.0.2006",
+    "taze": "^21.3.0"
   },
   "peerDependencies": {
     "typescript": "^7"

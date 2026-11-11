@@ -62,6 +62,8 @@ export const ToolSchema = v.strictObject({
 
 export type Tool = v.InferOutput<typeof ToolSchema>;
 
+export type ToolInput = v.InferInput<typeof ToolSchema>;
+
 export const ToolRefSchema = v.union([v.string(), ToolSchema]);
 
 export type ToolRef = v.InferOutput<typeof ToolRefSchema>;
@@ -175,3 +177,5 @@ export const AgentSchema = v.strictObject({
 });
 
 export type Agent = v.InferOutput<typeof AgentSchema>;
+
+export type AgentInput = v.InferInput<typeof AgentSchema>;

@@ -1,39 +1,18 @@
-import * as v from 'valibot';
+import { ValidationError } from './errors';
 import type { AgentDocument } from './parser';
-import { AgentSchema, ToolSchema, type Agent, type Tool } from './schema';
+import { type AgentInput, type Tool, type ToolInput } from './schema';
+import { validateAgent, validateTool } from './validator';
 
 export * from './errors';
 export * from './parser';
 export * from './schema';
 export * from './validator';
 
-export interface AgentDocumentInput {
-    readonly manifest: Agent;
-    readonly instructions?: string;
-}
-
-function isDocumentInput(input: unknown): input is AgentDocumentInput {
-    return typeof input === 'object' && input !== null && 'manifest' in input;
-}
-
 /**
  * Type-safe authoring helper for an agent document.
  * Applies schema defaults, runs validation, and returns the canonical {@link AgentDocument}.
  *
  * @example
- * // Style A: Unified document object
- * const agent = defineAgent({
- *   manifest: {
- *     apiVersion: 'agent.ekisa.com.co/v1',
- *     kind: 'Agent',
- *     metadata: { name: 'support-bot', version: '1.0.0' },
- *     spec: { model: { id: 'gpt-4o' } }
- *   },
- *   instructions: 'You are a support bot.'
- * });
- *
- * @example
- * // Style B: Manifest + instructions as arguments
  * const agent = defineAgent(
  *   {
  *     apiVersion: 'agent.ekisa.com.co/v1',
@@ -44,27 +23,12 @@ function isDocumentInput(input: unknown): input is AgentDocumentInput {
  *   'You are a support bot.'
  * );
  */
-export function defineAgent(document: AgentDocumentInput): AgentDocument;
-export function defineAgent(manifest: Agent, instructions?: string): AgentDocument;
-export function defineAgent(manifestOrDoc: Agent | AgentDocumentInput, instructionsArg?: string): AgentDocument {
-    if (isDocumentInput(manifestOrDoc)) {
-        return {
-            manifest: v.parse(AgentSchema, manifestOrDoc.manifest),
-            instructions: (manifestOrDoc.instructions ?? '').trim(),
-        };
+export function defineAgent(manifest: AgentInput, instructions?: string): AgentDocument {
+    const result = validateAgent(manifest);
+    if (!result.success) {
+        throw new ValidationError('Agent manifest validation failed', result.issues);
     }
-
-    return {
-        manifest: v.parse(AgentSchema, manifestOrDoc),
-        instructions: (instructionsArg ?? '').trim(),
-    };
-}
-
-/**
- * Type-safe authoring helper for pure frontmatter manifests (without instructions).
- */
-export function defineAgentManifest(manifest: Agent): Agent {
-    return v.parse(AgentSchema, manifest);
+    return { manifest: result.data, instructions: (instructions ?? '').trim() };
 }
 
 /**
@@ -82,6 +46,10 @@ export function defineAgentManifest(manifest: Agent): Agent {
  *   }
  * });
  */
-export function defineTool(tool: Tool): Tool {
-    return v.parse(ToolSchema, tool);
+export function defineTool(tool: ToolInput): Tool {
+    const result = validateTool(tool);
+    if (!result.success) {
+        throw new ValidationError('Tool definition validation failed', result.issues);
+    }
+    return result.data;
 }

@@ -2,10 +2,7 @@
   "name": "agent",
   "private": true,
   "workspaces": [
-    "agent-spec",
-    "agent-skills",
-    "agent-oci",
-    "agent-runtime"
+    "./packages/*"
   ],
   "scripts": {
     "typecheck": "bun check",

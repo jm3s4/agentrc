@@ -8,12 +8,10 @@ A modular TypeScript toolkit implementing the **Ekisa Specification for Agents (
 
 ## Packages
 
-| Package                                                              | JSR                                                                                              |
-| :------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------- |
-| [`@ekisa/agent-spec`](https://jsr.io/@ekisa/agent-spec)              | [![JSR](https://jsr.io/badges/@ekisa/agent-spec)](https://jsr.io/badges/@ekisa/agent-spec)       |
-| [`@ekisa/agent-skills`](https://jsr.io/@ekisa/agent-skills)          | [![JSR](https://jsr.io/badges/@ekisa/agent-skills)](https://jsr.io/badges/@ekisa/agent-skills)   |
-| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci)                | [![JSR](https://jsr.io/badges/@ekisa/agent-oci)](https://jsr.io/badges/@ekisa/agent-oci)         |
-| [`@ekisa/agent-runtime`](https://jsr.io/badges/@ekisa/agent-runtime) | [![JSR](https://jsr.io/badges/@ekisa/agent-runtime)](https://jsr.io/badges/@ekisa/agent-runtime) |
+| Package                                               | JSR                                                                                      |
+| :---------------------------------------------------- | :--------------------------------------------------------------------------------------- |
+| [`@ekisa/agent`](https://jsr.io/@ekisa/agent)         | [![JSR](https://jsr.io/badges/@ekisa/agent)](https://jsr.io/badges/@ekisa/agent)         |
+| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci) | [![JSR](https://jsr.io/badges/@ekisa/agent-oci)](https://jsr.io/badges/@ekisa/agent-oci) |
 
 ## Requirements
 

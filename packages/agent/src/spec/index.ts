@@ -1,9 +1,8 @@
-import { ValidationError } from './errors';
+import { ValidationError } from '../errors';
 import type { AgentDocument } from './parser';
-import { type AgentInput, type Tool, type ToolInput } from './schema';
+import type { AgentInput, Tool, ToolInput } from './schema';
 import { validateAgent, validateTool } from './validator';
 
-export * from './errors';
 export * from './parser';
 export * from './schema';
 export * from './validator';

@@ -1,14 +1,8 @@
 import { parse as parseYaml, stringify as stringifyYaml, YAMLParseError } from 'yaml';
-import { ParseError, ValidationError } from './errors';
+import { ParseError, ValidationError } from '../errors';
+import { parseFrontmatter } from '../frontmatter';
 import type { Agent, Tool } from './schema';
 import { validateAgent, validateTool } from './validator';
-
-/**
- * Matches frontmatter enclosed by `---` delimiters at the beginning of a document.
- * Non-greedy matching ensures subsequent `---` rules in Markdown are treated as body content.
- */
-const FRONTMATTER_REGEX =
-    /^(?:\uFEFF)?[^\S\r\n]*---[^\S\r\n]*\r?\n([\s\S]*?)\r?\n[^\S\r\n]*---[^\S\r\n]*(?:\r?\n|$)([\s\S]*)$/;
 
 /** Complete representation of an `AGENT.md` document. */
 export interface AgentDocument {
@@ -36,22 +30,9 @@ function safeYamlParse(raw: string, context: string): unknown {
  * @throws {@link ValidationError} If the frontmatter fails schema validation.
  */
 export function parseAgent(source: string): AgentDocument {
-    if (!source || typeof source !== 'string') {
-        throw new ParseError('Source document must be a non-empty string');
-    }
+    const [frontmatter, instructions] = parseFrontmatter(source, 'AGENT.md');
 
-    const match = FRONTMATTER_REGEX.exec(source);
-    if (!match) {
-        if (!source.trimStart().startsWith('---')) {
-            throw new ParseError('AGENT.md must begin with frontmatter enclosed by "---"');
-        }
-        throw new ParseError('AGENT.md frontmatter is missing closing "---" delimiter');
-    }
-
-    const frontmatterRaw = match[1] ?? '';
-    const instructionsRaw = match[2] ?? '';
-
-    const parsedYaml = safeYamlParse(frontmatterRaw, 'AGENT.md frontmatter');
+    const parsedYaml = safeYamlParse(frontmatter, 'AGENT.md frontmatter');
     const result = validateAgent(parsedYaml);
 
     if (!result.success) {
@@ -60,7 +41,7 @@ export function parseAgent(source: string): AgentDocument {
 
     return {
         manifest: result.data,
-        instructions: instructionsRaw.trim(),
+        instructions: instructions,
     };
 }
 

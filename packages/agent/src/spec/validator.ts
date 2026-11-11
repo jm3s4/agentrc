@@ -1,26 +1,6 @@
 import * as v from 'valibot';
-import type { SpecIssue, ValidationResult } from './errors';
+import { toSpecIssues, type ValidationResult } from '../errors';
 import { AgentSchema, ToolSchema, type Agent, type Tool } from './schema';
-
-function formatPath(issue: v.BaseIssue<unknown>): string {
-    if (!issue.path || issue.path.length === 0) {
-        return 'root';
-    }
-
-    return issue.path
-        .map((item) => {
-            const key = item.key;
-            return typeof key === 'symbol' ? key.toString() : String(key);
-        })
-        .join('.');
-}
-
-export function toSpecIssues(issues: readonly v.BaseIssue<unknown>[]): readonly SpecIssue[] {
-    return issues.map((issue) => ({
-        path: formatPath(issue),
-        message: issue.message,
-    }));
-}
 
 /**
  * Validates unknown data against the {@link AgentSchema} without throwing.

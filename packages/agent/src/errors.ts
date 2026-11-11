@@ -1,3 +1,5 @@
+import * as v from 'valibot';
+
 /** A specific validation issue found in a document. */
 export interface SpecIssue {
     readonly path: string;
@@ -30,4 +32,24 @@ export class ValidationError extends Error {
         const detail = issues.map((i) => `  - [${i.path}]: ${i.message}`).join('\n');
         super(`${message}\n${detail}`);
     }
+}
+
+function formatPath(issue: v.BaseIssue<unknown>): string {
+    if (!issue.path || issue.path.length === 0) {
+        return 'root';
+    }
+
+    return issue.path
+        .map((item) => {
+            const key = item.key;
+            return typeof key === 'symbol' ? key.toString() : String(key);
+        })
+        .join('.');
+}
+
+export function toSpecIssues(issues: readonly v.BaseIssue<unknown>[]): readonly SpecIssue[] {
+    return issues.map((issue) => ({
+        path: formatPath(issue),
+        message: issue.message,
+    }));
 }

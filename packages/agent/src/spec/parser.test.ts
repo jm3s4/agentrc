@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { ParseError, ValidationError } from './errors';
+import { ParseError, ValidationError } from '../errors';
 import { parseAgent, parseTool, stringifyAgent, stringifyTool } from './parser';
 
 const validAgentMd = `---

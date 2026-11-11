@@ -1,4 +1,4 @@
-# agent-oci
+# `@ekisa/agent-oci`
 
 Push, pull, and distribute versioned AI agent artifacts through OCI-compatible registries.
 

@@ -34,6 +34,9 @@
     "packages/agent-oci": {
       "name": "@ekisa/agent-oci",
       "version": "0.1.0",
+      "dependencies": {
+        "@ekisa/agent": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },

@@ -4,18 +4,17 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Native ESM](https://img.shields.io/badge/Native-ESM-F7DF1E?logo=javascript&logoColor=black)](#requirements)
 
-A modular TypeScript toolkit implementing the **Ekisa Specification for Agents (EAS)**. A declarative standard for defining, distributing via OCI, and executing AI agents with client-side tool ownership.
+A modular TypeScript toolkit implementing the **Ekisa Specification for Agents (EAS)**. A declarative standard for defining, distributing, and executing AI agents with client-side tool ownership.
 
 ## Packages
 
-| Package                                               | JSR                                                                                      |
-| :---------------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| [`@ekisa/agent`](https://jsr.io/@ekisa/agent)         | [![JSR](https://jsr.io/badges/@ekisa/agent)](https://jsr.io/badges/@ekisa/agent)         |
-| [`@ekisa/agent-oci`](https://jsr.io/@ekisa/agent-oci) | [![JSR](https://jsr.io/badges/@ekisa/agent-oci)](https://jsr.io/badges/@ekisa/agent-oci) |
+| Package                                       | JSR                                                                              |
+| :-------------------------------------------- | :------------------------------------------------------------------------------- |
+| [`@ekisa/agent`](https://jsr.io/@ekisa/agent) | [![JSR](https://jsr.io/badges/@ekisa/agent)](https://jsr.io/badges/@ekisa/agent) |
 
 ## Requirements
 
-- [Bun](https://bun.sh/) (v1.1+ with workspace support)
+- [Bun](https://bun.sh/)
 - TypeScript (v7.0+) with native ESM
 
 No bundler, transpilation, or build step is required. Packages are published directly as raw TypeScript to [JSR](https://jsr.io/).
@@ -108,7 +107,7 @@ You are a general-purpose assistant for enterprise support. Answer concisely and
 ```
 
 > [!IMPORTANT]
-> Strings in `spec.tools` are paths inside the OCI bundle (e.g. `./tools/lookup-account.yaml`). They're resolved by `@ekisa/agent-oci` when the bundle is pulled; the runtime never reads files directly. Inline tool definitions are also accepted for tools that are not backed by a file in the bundle.
+> Strings in `spec.tools` are paths inside the bundle root (e.g. `./tools/lookup-account.yaml`). They're resolved by `@ekisa/agent-bundle` when the artifact is loaded; the parsing layer never reads files directly. Inline tool definitions are also accepted for tools that are not backed by a file in the bundle.
 
 > [!TIP]
 > `spec.model` and `metadata` are extensible: both accept provider-specific and organization-specific fields that are not declared in the schema. Use them to carry model parameters (`responseFormat`, `cacheControl`, ...) or metadata (`owner`, `contact`, ...) without waiting for a schema bump.
@@ -160,44 +159,12 @@ Rules the runtime follows:
 The template language, including the exact character set permitted for `name` and `NAME` is defined in the EAS specification and enforced by the runtime, not by the manifest schema. Manifests that contain literal `{{` sequences in header or body values should be interpreted as intentional only if they also resolve at runtime; otherwise they're malformed.
 
 > [!IMPORTANT]
-> Never write a credential as a literal. Any value in a tool file becomes part of the published OCI image. Sensitive headers must use the `{{secret.NAME}}` namespace:
+> Never write a credential as a literal. Any value in a tool file becomes part of the published bundle artifact. Sensitive headers must use the `{{secret.NAME}}` namespace:
 >
 > ```yaml
 > # Correct: resolved by the runtime, never shipped in the bundle.
 > Authorization: "Bearer {{secret.INTERNAL_API_KEY}}"
 >
-> # Wrong: the credential is now baked into the OCI image forever.
+> # Wrong: the credential is now baked into the artifact forever.
 > Authorization: "Bearer sk-live-abc123…"
 > ```
-
-## Client-side tool execution
-
-Under the Ekisa specification, tool execution lives on the consumer application, not on a central proxy. Tool manifests declare contracts (parameters, URL, header templates), while consumer apps supply the secrets that resolve those templates:
-
-```typescript
-import { pullAgent } from "@ekisa/agent-oci";
-import { createRuntime, httpTool } from "@ekisa/agent-runtime";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-
-// Pull an immutable bundle from an OCI registry.
-const bundle = await pullAgent("ghcr.io/ekisa-team/agents/assistant:1.0.0");
-
-// Compile declarative tools locally. `secrets` resolves every `{{secret.NAME}}` reference in the tool's url/headers/body.
-const tools = {
-    "lookup-account": httpTool(bundle.tools["lookup-account"], {
-        secrets: {
-            INTERNAL_API_KEY: process.env.INTERNAL_API_KEY!,
-        },
-    }),
-};
-
-// Start the execution runtime.
-const runtime = createRuntime({
-    bundle,
-    model: myProvider(bundle.manifest.spec.model.id),
-    tools,
-});
-
-// Stream responses.
-const stream = await runtime.stream(messages);
-```

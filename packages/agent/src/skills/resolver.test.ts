@@ -1,9 +1,9 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { ParseError } from '../errors';
 import { createMemoryResolver } from './resolver';
 
 describe('createMemoryResolver (OCI / Virtual Bundles)', () => {
-    test('resolves files from virtual Map with directory prefix', async () => {
+    it('resolves files from virtual Map with directory prefix', async () => {
         const virtualFiles = new Map<string, string | Uint8Array>([
             ['skills/triage/SKILL.md', '---\nname: triage\ndescription: Triage queries.\n---\nBody'],
             ['skills/triage/references/priority.md', '# Priority Matrix\nLevel 1: Urgent'],

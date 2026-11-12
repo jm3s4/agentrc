@@ -1,4 +1,4 @@
-export * from './errors';
+export type * from './errors';
 export * from './frontmatter';
 export * from './native';
 export * from './skills';

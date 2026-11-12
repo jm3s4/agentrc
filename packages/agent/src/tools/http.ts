@@ -1,14 +1,18 @@
+import ipaddr from 'ipaddr.js';
 import { ParseError } from '../errors';
 import type { HttpExecution, Tool } from '../spec';
-import { resolveTemplate, resolveTemplateRecord } from './template';
+import { resolveTemplate, resolveTemplateRecord, type TemplateContext } from './template';
 
 /** Security policy for HTTP tool execution to prevent SSRF attacks. */
 export interface HttpSecurityOptions {
-    /** Allow loopback addresses (localhost, 127.0.0.1, ::1). Default: false. */
+    /** Allow loopback addresses (localhost, 127.0.0.0/8, ::1, 0.0.0.0, ::). Default: false. */
     readonly allowLoopback?: boolean;
-    /** Allow private RFC 1918 subnets (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16). Default: false. */
+    /** Allow private subnets (RFC 1918 and IPv6 ULA fc00::/7). Default: false. */
     readonly allowPrivateIps?: boolean;
-    /** Optional whitelist of permitted hostnames. If set, only these hosts are allowed. */
+    /**
+     * Optional allowlist of allowed hostnames.
+     * If set, only these hosts are allowed (an empty array blocks all hosts).
+     */
     readonly allowedHosts?: readonly string[];
 }
 
@@ -20,25 +24,64 @@ export interface ExecuteHttpToolOptions {
     readonly secrets?: Readonly<Record<string, string>>;
     /** SSRF and network security configuration. */
     readonly security?: HttpSecurityOptions;
-    /** Custom fetch implementation (for proxies, custom agents). */
+    /** Custom fetch implementation (for proxies, DNS pinning, or custom agents). */
     readonly fetch?: typeof fetch;
     /** Optional cancellation signal. */
     readonly signal?: AbortSignal;
 }
 
-/** Strips IPv6 brackets in `.hostname` ('[::1]') for comparisons. */
+type ResolveContext = Omit<TemplateContext, 'encodeUrl'>;
+
+/** Strips IPv6 brackets, trailing dots, and IPv4-mapped IPv6 wrappers for comparisons. */
 function normalizeHost(hostname: string): string {
-    const lower = hostname.toLowerCase();
-    return lower.startsWith('[') && lower.endsWith(']') ? lower.slice(1, -1) : lower;
+    const bare = hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+    return bare.toLowerCase().replace(/\.+$/, '');
 }
 
-/** Validates that a target URL is safe from SSRF, metadata access, and protocol smuggling. */
+/**
+ * Validates that a resolved tool URL is safe to dispatch from this process.
+ *
+ * @remarks
+ * Tool URLs live in YAML artifacts and can be steered by template arguments.
+ * An attacker who controls a URL can otherwise reach internal services.
+ * Rejects any target that is not a public unicast address.
+ *
+ * Blocked ranges:
+ *
+ * - loopback (`127.0.0.0/8`, `::1`): admin panels, Docker socket proxies.
+ * - unspecified (`0.0.0.0`, `::`): aliases loopback at the socket layer.
+ * - private (`10/8`, `172.16/12`, `192.168/16`): VPCs, pod and service CIDRs.
+ * - uniqueLocal (`fc00::/7`): IPv6 RFC 1918.
+ * - linkLocal (`169.254/16`, `fe80::/10`): cloud metadata endpoints.
+ * - carrierGradeNat (`100.64/10`): Alibaba metadata, Tailscale MagicDNS.
+ * - multicast (`224/4`, `ff00::/8`, `255.255.255.255`).
+ * - reserved (`192.0.2/24`, `198.18/15`, `240/4`, 6to4, Teredo, NAT64).
+ *
+ * Anything classified as unicast is allowed, subject to `allowedHosts`.
+ *
+ * `allowLoopback` and `allowPrivateIps` relax loopback, unspecified, private,
+ * and uniqueLocal. `allowedHosts` is checked before IP classification; an
+ * empty array blocks every host, `undefined` disables the allowlist.
+ * linkLocal, carrierGradeNat, and reserved are never overridable.
+ *
+ * The hostname is validated literally, before DNS. Rebinding and wildcard
+ * DNS are stopped only at connect time; pass a DNS-pinning `fetch` or use an
+ * egress proxy. Numeric host forms such as `2130706433` are caught only
+ * because WHATWG URL parsers normalize them to dotted IPv4.
+ *
+ * @param urlString Fully interpolated URL, after template resolution.
+ * @param security Optional allowlist and range overrides.
+ * @returns The parsed URL, ready for dispatch.
+ * @throws {@link ParseError} if the URL is invalid, the protocol is not
+ *   `http` or `https`, the host is not in `allowedHosts`, or the target falls
+ *   into a blocked range.
+ */
 function assertSafeUrl(urlString: string, security: HttpSecurityOptions = {}): URL {
     let parsed: URL;
     try {
         parsed = new URL(urlString);
     } catch {
-        throw new ParseError(`Invalid URL format: ${urlString}`);
+        throw new ParseError('Invalid URL format');
     }
 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -46,40 +89,53 @@ function assertSafeUrl(urlString: string, security: HttpSecurityOptions = {}): U
     }
 
     const host = normalizeHost(parsed.hostname);
-    if (security.allowedHosts && security.allowedHosts.length > 0) {
+    if (security.allowedHosts !== undefined) {
         const allowed = security.allowedHosts.map(normalizeHost);
         if (!allowed.includes(host)) {
             throw new ParseError(`Security violation: Host '${host}' is not in allowedHosts whitelist`);
         }
     }
 
-    const isLoopback = host === 'localhost' || host === '::1' || host === '0.0.0.0' || host.startsWith('127.');
-    if (isLoopback && !security.allowLoopback) {
-        throw new ParseError(`Security violation: Access to loopback address '${host}' is blocked`);
+    if (host === 'localhost' || host.endsWith('.localhost')) {
+        if (!security.allowLoopback) {
+            throw new ParseError(`Security violation: Access to loopback address '${host}' is blocked`);
+        }
+        return parsed;
     }
 
-    if (host === '169.254.169.254' || host.startsWith('169.254.')) {
-        throw new ParseError('Security violation: Access to cloud metadata IP (169.254.x.x) is strictly blocked');
+    if (!ipaddr.isValid(host)) {
+        return parsed;
     }
 
-    const isPrivate =
-        host.startsWith('10.') || host.startsWith('192.168.') || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host);
-    if (isPrivate && !security.allowPrivateIps) {
-        throw new ParseError(`Security violation: Access to private subnet IP '${host}' is blocked`);
+    const range = ipaddr.process(host).range();
+    if (range === 'unicast') {
+        return parsed;
     }
 
-    return parsed;
+    if (range === 'loopback' || range === 'unspecified') {
+        if (!security.allowLoopback) {
+            throw new ParseError(`Security violation: Access to loopback address '${host}' is blocked`);
+        }
+        return parsed;
+    }
+
+    if (range === 'private' || range === 'uniqueLocal') {
+        if (!security.allowPrivateIps) {
+            throw new ParseError(`Security violation: Access to private subnet IP '${host}' is blocked`);
+        }
+        return parsed;
+    }
+
+    if (range === 'linkLocal') {
+        throw new ParseError('Security violation: Access to cloud metadata / link-local IP is strictly blocked');
+    }
+
+    throw new ParseError(`Security violation: Access to reserved IP '${host}' (${range}) is blocked`);
 }
 
-function resolveValue(
-    value: unknown,
-    context: {
-        args: Readonly<Record<string, unknown>>;
-        secrets?: Readonly<Record<string, string>>;
-    },
-): unknown {
+function resolveValue(value: unknown, context: ResolveContext): unknown {
     if (typeof value === 'string') {
-        return resolveTemplate(value, { ...context, encodeUrl: false });
+        return resolveTemplate(value, context);
     }
 
     if (Array.isArray(value)) {
@@ -97,19 +153,13 @@ function resolveValue(
     return value;
 }
 
-function resolveBody(
-    body: HttpExecution['body'],
-    context: {
-        args: Readonly<Record<string, unknown>>;
-        secrets?: Readonly<Record<string, string>>;
-    },
-): string | undefined {
+function resolveBody(body: HttpExecution['body'], context: ResolveContext): string | undefined {
     if (!body) {
         return undefined;
     }
 
     if (typeof body === 'string') {
-        return resolveTemplate(body, { ...context, encodeUrl: false });
+        return resolveTemplate(body, context);
     }
 
     return JSON.stringify(resolveValue(body, context));
@@ -121,7 +171,7 @@ function resolveBody(
  * @param tool The Tool definition containing an HTTP execution block.
  * @param options Tool arguments, secrets, and security configuration.
  * @returns Parsed JSON or text response from the endpoint.
- * @throws {ParseError} If tool execution metadata is missing, templates cannot be resolved, or URL fails SSRF checks.
+ * @throws {ParseError} If tool execution metadata is missing, templates cannot be resolved, URL fails SSRF checks, or the HTTP request fails.
  */
 export async function executeHttpTool(tool: Tool, options: ExecuteHttpToolOptions): Promise<unknown> {
     const exec = tool.execution;
@@ -136,7 +186,7 @@ export async function executeHttpTool(tool: Tool, options: ExecuteHttpToolOption
 
     const headers = new Headers();
     if (exec.headers) {
-        const resolvedHeaders = resolveTemplateRecord(exec.headers, { args, secrets, encodeUrl: false });
+        const resolvedHeaders = resolveTemplateRecord(exec.headers, { args, secrets });
         for (const [key, value] of Object.entries(resolvedHeaders)) {
             headers.set(key, value);
         }
@@ -153,12 +203,21 @@ export async function executeHttpTool(tool: Tool, options: ExecuteHttpToolOption
     }
     const combinedSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0];
 
-    const response = await customFetch(targetUrl, {
-        method: exec.method,
-        headers,
-        body: resolvedBody,
-        signal: combinedSignal,
-    });
+    let response: Response;
+    try {
+        response = await customFetch(targetUrl, {
+            method: exec.method,
+            headers,
+            body: resolvedBody,
+            redirect: 'error',
+            signal: combinedSignal,
+        });
+    } catch (error) {
+        if (combinedSignal?.aborted) {
+            throw error;
+        }
+        throw new ParseError(`HTTP ${exec.method} ${tool.name} request failed`, error);
+    }
 
     if (!response.ok) {
         const errorText = await response.text().catch(() => '');
@@ -167,6 +226,19 @@ export async function executeHttpTool(tool: Tool, options: ExecuteHttpToolOption
         );
     }
 
+    const text = await response.text();
+    if (!text) {
+        return '';
+    }
+
     const contentType = response.headers.get('content-type') ?? '';
-    return contentType.includes('application/json') ? response.json() : response.text();
+    if (!/application\/([a-z0-9.+-]+\+)?json/i.test(contentType)) {
+        return text;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        throw new ParseError(`HTTP ${exec.method} ${tool.name} returned invalid JSON`, error);
+    }
 }

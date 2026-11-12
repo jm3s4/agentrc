@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it, test } from 'bun:test';
 import * as v from 'valibot';
 import {
     AgentMetadataSchema,
@@ -75,7 +75,7 @@ const fullManifest = {
 };
 
 describe('HttpExecutionSchema', () => {
-    test('parses a full valid execution', () => {
+    it('parses a full valid execution', () => {
         expect(
             ok(HttpExecutionSchema, {
                 type: 'http',
@@ -95,7 +95,7 @@ describe('HttpExecutionSchema', () => {
         });
     });
 
-    test('accepts string body', () => {
+    it('accepts string body', () => {
         ok(HttpExecutionSchema, { type: 'http', method: 'POST', url: 'x', body: '{"raw":1}' });
     });
 
@@ -107,17 +107,17 @@ describe('HttpExecutionSchema', () => {
         fails(HttpExecutionSchema, { type: 'http', method, url: 'x' });
     });
 
-    test('rejects empty url', () => {
+    it('rejects empty url', () => {
         fails(HttpExecutionSchema, { type: 'http', method: 'GET', url: '' }, 'URL is required');
     });
 
-    test('rejects extra fields (strictObject)', () => {
+    it('rejects extra fields (strictObject)', () => {
         fails(HttpExecutionSchema, { type: 'http', method: 'GET', url: 'x', retries: 3 });
     });
 });
 
 describe('ToolDefinitionSchema', () => {
-    test('parses a full valid definition', () => {
+    it('parses a full valid definition', () => {
         expect(
             ok(ToolSchema, {
                 name: 'fetcher',
@@ -142,11 +142,11 @@ describe('ToolDefinitionSchema', () => {
         (name) => fails(ToolSchema, { name, description: 'A valid description here.', inputSchema: {} }, 'kebab-case'),
     );
 
-    test('rejects description shorter than 10 characters', () => {
+    it('rejects description shorter than 10 characters', () => {
         fails(ToolSchema, { name: 'a', description: 'short', inputSchema: {} }, 'at least 10 characters');
     });
 
-    test('rejects extra fields (strictObject)', () => {
+    it('rejects extra fields (strictObject)', () => {
         fails(ToolSchema, { name: 'a', description: 'A valid description.', inputSchema: {}, version: '1' });
     });
 });
@@ -157,7 +157,7 @@ describe('ToolDefinitionSchema > inputSchema', () => {
         description: 'Evaluates arithmetic expressions.',
     };
 
-    test('accepts a valid JSON Schema', () => {
+    it('accepts a valid JSON Schema', () => {
         ok(ToolSchema, {
             ...base,
             inputSchema: {
@@ -168,15 +168,15 @@ describe('ToolDefinitionSchema > inputSchema', () => {
         });
     });
 
-    test('accepts the empty schema {} (accepts anything)', () => {
+    it('accepts the empty schema {} (accepts anything)', () => {
         ok(ToolSchema, { ...base, inputSchema: {} });
     });
 
-    test('rejects invalid keyword value with Ajv detail', () => {
+    it('rejects invalid keyword value with Ajv detail', () => {
         fails(ToolSchema, { ...base, inputSchema: { type: 'invalid-type' } }, 'Invalid JSON Schema');
     });
 
-    test('rejects non-object properties', () => {
+    it('rejects non-object properties', () => {
         fails(
             ToolSchema,
             { ...base, inputSchema: { type: 'object', properties: 'not-an-object' } },
@@ -184,12 +184,12 @@ describe('ToolDefinitionSchema > inputSchema', () => {
         );
     });
 
-    test('rejects boolean root schemas (ecosystem requires object root)', () => {
+    it('rejects boolean root schemas (ecosystem requires object root)', () => {
         fails(ToolSchema, { ...base, inputSchema: true });
         fails(ToolSchema, { ...base, inputSchema: false });
     });
 
-    test('accepts boolean sub-schemas inside object schemas', () => {
+    it('accepts boolean sub-schemas inside object schemas', () => {
         ok(ToolSchema, {
             ...base,
             inputSchema: {
@@ -202,11 +202,11 @@ describe('ToolDefinitionSchema > inputSchema', () => {
         });
     });
 
-    test('rejects array inputSchema', () => {
+    it('rejects array inputSchema', () => {
         fails(ToolSchema, { ...base, inputSchema: [] }, 'not an array');
     });
 
-    test('rejects outputSchema that is an invalid JSON Schema', () => {
+    it('rejects outputSchema that is an invalid JSON Schema', () => {
         fails(
             ToolSchema,
             {
@@ -220,11 +220,11 @@ describe('ToolDefinitionSchema > inputSchema', () => {
 });
 
 describe('ToolRefSchema', () => {
-    test('accepts a string reference', () => {
+    it('accepts a string reference', () => {
         expect(ok(ToolRefSchema, 'web-search')).toBe('web-search');
     });
 
-    test('accepts an inline ToolDefinition', () => {
+    it('accepts an inline ToolDefinition', () => {
         expect(
             ok(ToolRefSchema, {
                 name: 'calc',
@@ -240,15 +240,15 @@ describe('ToolRefSchema', () => {
 });
 
 describe('ModelSchema', () => {
-    test('requires id', () => {
+    it('requires id', () => {
         fails(ModelSchema, { temperature: 0.5 });
     });
 
-    test('parses minimal input', () => {
+    it('parses minimal input', () => {
         expect(ok(ModelSchema, { id: 'gpt-4o' })).toEqual({ id: 'gpt-4o' });
     });
 
-    test('parses all documented fields', () => {
+    it('parses all documented fields', () => {
         const input = {
             id: 'gpt-4o',
             temperature: 0.7,
@@ -278,11 +278,11 @@ describe('ModelSchema', () => {
         fails(ModelSchema, { id: 'x', [field]: value });
     });
 
-    test('rejects unknown reasoningEffort', () => {
+    it('rejects unknown reasoningEffort', () => {
         fails(ModelSchema, { id: 'x', reasoningEffort: 'max' });
     });
 
-    test('preserves extra fields (looseObject)', () => {
+    it('preserves extra fields (looseObject)', () => {
         expect(
             ok(ModelSchema, {
                 id: 'claude-sonnet-4',
@@ -302,11 +302,11 @@ describe('ModelSchema', () => {
 });
 
 describe('RuntimeSchema', () => {
-    test('applies defaults on empty input', () => {
+    it('applies defaults on empty input', () => {
         expect(ok(RuntimeSchema, {})).toEqual({ maxSteps: 6, timeoutMs: 60000 });
     });
 
-    test('keeps provided values', () => {
+    it('keeps provided values', () => {
         expect(ok(RuntimeSchema, { maxSteps: 10 })).toEqual({ maxSteps: 10, timeoutMs: 60000 });
     });
 
@@ -317,13 +317,13 @@ describe('RuntimeSchema', () => {
         fails(RuntimeSchema, { [field]: value });
     });
 
-    test('rejects extra fields (strictObject)', () => {
+    it('rejects extra fields (strictObject)', () => {
         fails(RuntimeSchema, { maxSteps: 3, retries: 2 });
     });
 });
 
 describe('LocaleSchema', () => {
-    test('applies neutral defaults on empty input', () => {
+    it('applies neutral defaults on empty input', () => {
         expect(ok(LocaleSchema, {})).toEqual({ language: 'en-US', timeZone: 'UTC' });
     });
 
@@ -335,17 +335,17 @@ describe('LocaleSchema', () => {
         fails(LocaleSchema, { language }, 'ISO 639');
     });
 
-    test('rejects empty timeZone', () => {
+    it('rejects empty timeZone', () => {
         fails(LocaleSchema, { timeZone: '' }, 'Time zone is required');
     });
 
-    test('rejects extra fields (strictObject)', () => {
+    it('rejects extra fields (strictObject)', () => {
         fails(LocaleSchema, { language: 'en', timeZone: 'UTC', currency: 'USD' });
     });
 });
 
 describe('PromptSuggestionSchema', () => {
-    test('accepts { label, prompt }', () => {
+    it('accepts { label, prompt }', () => {
         expect(ok(PromptSuggestionSchema, { label: 'Hi', prompt: 'Say hi' })).toEqual({
             label: 'Hi',
             prompt: 'Say hi',
@@ -361,7 +361,7 @@ describe('PromptSuggestionSchema', () => {
 });
 
 describe('SuggestionSchema', () => {
-    test('parses prompt variant', () => {
+    it('parses prompt variant', () => {
         expect(ok(SuggestionSchema, { type: 'prompt', label: 'Hi', prompt: 'Say hi' })).toEqual({
             type: 'prompt',
             label: 'Hi',
@@ -369,7 +369,7 @@ describe('SuggestionSchema', () => {
         });
     });
 
-    test('parses group variant', () => {
+    it('parses group variant', () => {
         expect(
             ok(SuggestionSchema, {
                 type: 'group',
@@ -393,37 +393,37 @@ describe('SuggestionSchema', () => {
 });
 
 describe('KnowledgeCapabilitySchema', () => {
-    test('accepts at least one source', () => {
+    it('accepts at least one source', () => {
         expect(ok(KnowledgeCapabilitySchema, { sources: ['kb/main'] })).toEqual({ sources: ['kb/main'] });
     });
 
-    test('rejects empty sources', () => {
+    it('rejects empty sources', () => {
         fails(KnowledgeCapabilitySchema, { sources: [] }, 'At least one knowledge source');
     });
 
-    test('rejects extra fields (strictObject)', () => {
+    it('rejects extra fields (strictObject)', () => {
         fails(KnowledgeCapabilitySchema, { sources: ['kb'], reranker: 'bge' });
     });
 });
 
 describe('CapabilitiesSchema', () => {
-    test('accepts empty object (all disabled)', () => {
+    it('accepts empty object (all disabled)', () => {
         expect(ok(CapabilitiesSchema, {})).toEqual({});
     });
 
-    test('accepts knowledge enabled', () => {
+    it('accepts knowledge enabled', () => {
         expect(ok(CapabilitiesSchema, { knowledge: { sources: ['kb/main'] } })).toEqual({
             knowledge: { sources: ['kb/main'] },
         });
     });
 
-    test('rejects unknown capability', () => {
+    it('rejects unknown capability', () => {
         fails(CapabilitiesSchema, { webSearch: { maxResults: 5 } });
     });
 });
 
 describe('AgentMetadataSchema', () => {
-    test('parses minimal metadata with defaults', () => {
+    it('parses minimal metadata with defaults', () => {
         expect(ok(AgentMetadataSchema, { name: 'a', version: '1.0.0' })).toMatchInlineSnapshot(`
           {
             "annotations": {},
@@ -445,11 +445,11 @@ describe('AgentMetadataSchema', () => {
         (version) => fails(AgentMetadataSchema, { name: 'a', version }, 'SemVer'),
     );
 
-    test('rejects non-kebab name', () => {
+    it('rejects non-kebab name', () => {
         fails(AgentMetadataSchema, { name: 'My_Agent', version: '1.0.0' }, 'kebab-case');
     });
 
-    test('preserves extra fields (looseObject)', () => {
+    it('preserves extra fields (looseObject)', () => {
         expect(
             ok(AgentMetadataSchema, {
                 name: 'a',
@@ -472,7 +472,7 @@ describe('AgentMetadataSchema', () => {
 });
 
 describe('AgentSpecSchema', () => {
-    test('parses minimal spec (defaults applied)', () => {
+    it('parses minimal spec (defaults applied)', () => {
         expect(ok(AgentSpecSchema, { model: { id: 'gpt-4o' } })).toEqual({
             locale: { language: 'en-US', timeZone: 'UTC' },
             model: { id: 'gpt-4o' },
@@ -482,21 +482,14 @@ describe('AgentSpecSchema', () => {
         });
     });
 
-    test('locale omitted -> neutral defaults applied', () => {
+    it('locale omitted -> neutral defaults applied', () => {
         expect(ok(AgentSpecSchema, { model: { id: 'x' } }).locale).toEqual({
             language: 'en-US',
             timeZone: 'UTC',
         });
     });
 
-    test('runtime omitted -> inner defaults applied', () => {
-        expect(ok(AgentSpecSchema, { model: { id: 'x' } }).runtime).toEqual({
-            maxSteps: 6,
-            timeoutMs: 60000,
-        });
-    });
-
-    test('locale partial -> merged with defaults', () => {
+    it('locale partial -> merged with defaults', () => {
         expect(
             ok(AgentSpecSchema, {
                 model: { id: 'x' },
@@ -505,17 +498,17 @@ describe('AgentSpecSchema', () => {
         ).toEqual({ language: 'es', timeZone: 'UTC' });
     });
 
-    test('requires model', () => {
+    it('requires model', () => {
         fails(AgentSpecSchema, {});
     });
 
-    test('rejects unknown top-level key (strictObject)', () => {
+    it('rejects unknown top-level key (strictObject)', () => {
         fails(AgentSpecSchema, { model: { id: 'x' }, temperatures: 0.5 });
     });
 });
 
 describe('AgentManifestSchema', () => {
-    test('parses minimal manifest (all defaults resolved)', () => {
+    it('parses minimal manifest (all defaults resolved)', () => {
         expect(ok(AgentSchema, minimalManifest)).toMatchInlineSnapshot(`
           {
             "apiVersion": "agent.ekisa.com.co/v1",
@@ -546,7 +539,7 @@ describe('AgentManifestSchema', () => {
         `);
     });
 
-    test('parses full manifest (round-trip)', () => {
+    it('parses full manifest (round-trip)', () => {
         expect(ok(AgentSchema, fullManifest)).toMatchInlineSnapshot(`
           {
             "apiVersion": "agent.ekisa.com.co/v1",
@@ -625,33 +618,19 @@ describe('AgentManifestSchema', () => {
         `);
     });
 
-    test('rejects wrong apiVersion', () => {
+    it('rejects wrong apiVersion', () => {
         fails(AgentSchema, { ...minimalManifest, apiVersion: 'v2' });
     });
 
-    test('rejects wrong kind', () => {
+    it('rejects wrong kind', () => {
         fails(AgentSchema, { ...minimalManifest, kind: 'Tool' });
     });
 
-    test('rejects top-level typo (strictObject)', () => {
+    it('rejects top-level typo (strictObject)', () => {
         fails(AgentSchema, { ...minimalManifest, meta: minimalManifest.metadata });
     });
 
-    test('rejects spec.model.model; must use id', () => {
+    it('rejects spec.model.model; must use id', () => {
         fails(AgentSchema, { ...minimalManifest, spec: { model: { model: 'gpt-4o' } } });
-    });
-});
-
-describe('schema invariants', () => {
-    test('strictObject rejects any unknown key', () => {
-        fails(RuntimeSchema, { maxSteps: 1, unknown: true });
-        fails(LocaleSchema, { language: 'en', unknown: true });
-        fails(KnowledgeCapabilitySchema, { sources: ['x'], unknown: true });
-        fails(HttpExecutionSchema, { type: 'http', method: 'GET', url: 'x', unknown: true });
-    });
-
-    test('looseObject preserves unknown keys', () => {
-        expect(ok(ModelSchema, { id: 'x', vendorParam: 1 })).toHaveProperty('vendorParam', 1);
-        expect(ok(AgentMetadataSchema, { name: 'a', version: '1.0.0', team: 'p' })).toHaveProperty('team', 'p');
     });
 });

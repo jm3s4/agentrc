@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it, test } from 'bun:test';
 import * as v from 'valibot';
 import { ParseError, ValidationError } from '../errors';
 import { defineSkill, formatSkillCatalog } from './index';
@@ -27,7 +27,7 @@ Recordatorio: Solicitar documento físico.
 `;
 
 describe('SkillMetadataSchema', () => {
-    test('accepts valid metadata with all fields', () => {
+    it('accepts valid metadata with all fields', () => {
         const input = {
             name: 'appointment-management',
             description: 'Handles clinic appointment flows.',
@@ -40,7 +40,7 @@ describe('SkillMetadataSchema', () => {
         expect(output).toEqual(input);
     });
 
-    test('accepts minimal metadata with only name and description', () => {
+    it('accepts minimal metadata with only name and description', () => {
         const input = {
             name: 'booking',
             description: 'Minimal skill description.',
@@ -60,12 +60,12 @@ describe('SkillMetadataSchema', () => {
         },
     );
 
-    test('rejects empty description or description exceeding 1024 chars', () => {
+    it('rejects empty description or description exceeding 1024 chars', () => {
         expect(v.safeParse(SkillMetadataSchema, { name: 'valid', description: '' }).success).toBe(false);
         expect(v.safeParse(SkillMetadataSchema, { name: 'valid', description: 'x'.repeat(1025) }).success).toBe(false);
     });
 
-    test('rejects compatibility exceeding 500 chars', () => {
+    it('rejects compatibility exceeding 500 chars', () => {
         const result = v.safeParse(SkillMetadataSchema, {
             name: 'valid',
             description: 'Valid description.',
@@ -74,7 +74,7 @@ describe('SkillMetadataSchema', () => {
         expect(result.success).toBe(false);
     });
 
-    test('rejects non-string values inside metadata record', () => {
+    it('rejects non-string values inside metadata record', () => {
         const result = v.safeParse(SkillMetadataSchema, {
             name: 'valid',
             description: 'Valid description.',
@@ -83,7 +83,7 @@ describe('SkillMetadataSchema', () => {
         expect(result.success).toBe(false);
     });
 
-    test('preserves unrecognized fields (looseObject for forward compatibility)', () => {
+    it('preserves unrecognized fields (looseObject for forward compatibility)', () => {
         const output = v.parse(SkillMetadataSchema, {
             name: 'valid-skill',
             description: 'Valid description.',
@@ -94,7 +94,7 @@ describe('SkillMetadataSchema', () => {
 });
 
 describe('parseSkill', () => {
-    test('parses full valid SKILL.md document', () => {
+    it('parses full valid SKILL.md document', () => {
         const { metadata, instructions } = parseSkill(validSkillMd);
 
         expect(metadata.name).toBe('appointment-management');
@@ -109,7 +109,7 @@ describe('parseSkill', () => {
         expect(instructions).toContain('---\n\nRecordatorio: Solicitar documento físico.');
     });
 
-    test('parses SKILL.md with empty instructions body', () => {
+    it('parses SKILL.md with empty instructions body', () => {
         const raw = `---
 name: minimal-skill
 description: Does one thing.
@@ -119,18 +119,18 @@ description: Does one thing.
         expect(instructions).toBe('');
     });
 
-    test('handles Windows CRLF line endings cleanly', () => {
+    it('handles Windows CRLF line endings cleanly', () => {
         const crlf = '---\r\nname: crlf-skill\r\ndescription: CRLF test.\r\n---\r\n\r\nBody here.';
         const { metadata, instructions } = parseSkill(crlf);
         expect(metadata.name).toBe('crlf-skill');
         expect(instructions).toBe('Body here.');
     });
 
-    test('rejects document without opening delimiter', () => {
+    it('rejects document without opening delimiter', () => {
         expect(() => parseSkill('name: missing-delimiters\ndescription: test\n')).toThrow(ParseError);
     });
 
-    test('rejects document without closing delimiter', () => {
+    it('rejects document without closing delimiter', () => {
         const raw = `---
 name: unclosed
 description: test
@@ -138,7 +138,7 @@ description: test
         expect(() => parseSkill(raw)).toThrow(ParseError);
     });
 
-    test('rejects malformed YAML syntax with ParseError', () => {
+    it('rejects malformed YAML syntax with ParseError', () => {
         const raw = `---
 name: broken
 description: [unclosed yaml
@@ -147,7 +147,7 @@ Body`;
         expect(() => parseSkill(raw)).toThrow(ParseError);
     });
 
-    test('rejects metadata validation failure with ValidationError', () => {
+    it('rejects metadata validation failure with ValidationError', () => {
         const raw = `---
 name: INVALID_NAME
 description: test
@@ -156,7 +156,7 @@ Body`;
         expect(() => parseSkill(raw)).toThrow(ValidationError);
     });
 
-    test('round-trips serialization with stringifySkill', () => {
+    it('round-trips serialization with stringifySkill', () => {
         const parsed = parseSkill(validSkillMd);
         const serialized = stringifySkill(parsed.metadata, parsed.instructions);
         const reparsed = parseSkill(serialized);
@@ -167,7 +167,7 @@ Body`;
 });
 
 describe('defineSkill & formatSkillCatalog', () => {
-    test('defineSkill validates and returns typed skill structure', () => {
+    it('defineSkill validates and returns typed skill structure', () => {
         const skill = defineSkill(
             { name: 'author-test', description: 'Authored in TS.' },
             '# Instructions\nExecute now.',
@@ -177,11 +177,11 @@ describe('defineSkill & formatSkillCatalog', () => {
         expect(skill.instructions).toBe('# Instructions\nExecute now.');
     });
 
-    test('defineSkill throws on invalid input', () => {
+    it('defineSkill throws on invalid input', () => {
         expect(() => defineSkill({ name: 'BAD NAME', description: 'Invalid.' }, 'Body')).toThrow();
     });
 
-    test('formatSkillCatalog outputs valid XML catalog', () => {
+    it('formatSkillCatalog outputs valid XML catalog', () => {
         const xml = formatSkillCatalog([
             { name: 'booking', description: 'Book appointments.' },
             { name: 'billing', description: 'Process invoices.' },
@@ -193,7 +193,7 @@ describe('defineSkill & formatSkillCatalog', () => {
         expect(xml).toContain('</available_skills>');
     });
 
-    test('formatSkillCatalog returns empty string for empty array', () => {
+    it('formatSkillCatalog returns empty string for empty array', () => {
         expect(formatSkillCatalog([])).toBe('');
     });
 });

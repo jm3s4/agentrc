@@ -149,31 +149,16 @@ function normalizeBlocks(content: string | readonly string[] | undefined): strin
 }
 
 /**
- * Assembles provider-independent agent instructions.
+ * Builds provider-independent agent instructions, split into static and dynamic
+ * sections so provider adapters can cache the former without altering this logic.
  *
- * Section ordering:
- *
- * Static instructions:
- * 1. Agent document instructions.
- *
- * Dynamic instructions:
- * 1. Discovered skill catalog.
- * 2. Runtime variables.
- * 3. Temporal context.
- * 4. Additional application instructions.
- *
- * Reference context:
- * 1. Retrieved documents and other untrusted material.
- *
- * Static and dynamic instructions are returned separately to allow
- * provider adapters to apply caching strategies without modifying
- * the instruction-building logic.
- *
- * Reference material is never merged into application instructions.
+ * Static: agent document instructions, skill catalog.
+ * Dynamic: runtime variables, temporal context, additional instructions.
+ * Reference: untrusted material, never merged into instructions.
  *
  * @param doc Agent document containing the manifest and instructions.
- * @param options Dynamic variables, skills, reference material, and temporal overrides.
- * @returns Separated instruction sections and reference material.
+ * @param options Runtime variables, skills, reference material, temporal overrides.
+ * @returns Separated static/dynamic instruction sections and reference material.
  */
 export function buildSystemInstructions(
     doc: AgentDocument,
@@ -183,17 +168,15 @@ export function buildSystemInstructions(
     const dynamicSections: string[] = [];
 
     // Stable application instructions
-    const instructions = doc.instructions?.trim();
+    const instructions = doc.instructions.trim();
     if (instructions) {
         staticSections.push(instructions);
     }
 
     // Discovered skills
-    if (options.skills?.length) {
-        const catalog = formatSkillCatalog(options.skills).trim();
-        if (catalog) {
-            staticSections.push(catalog);
-        }
+    const catalog = formatSkillCatalog(options.skills ?? []);
+    if (catalog) {
+        staticSections.push(catalog);
     }
 
     // Structured runtime variables

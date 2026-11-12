@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { ParseError, ValidationError } from '../errors';
 import { parseAgent, parseTool, stringifyAgent, stringifyTool } from './parser';
 
@@ -47,7 +47,7 @@ execution:
 `;
 
 describe('parseAgent', () => {
-    test('parses a valid AGENT.md document', () => {
+    it('parses a valid AGENT.md document', () => {
         const doc = parseAgent(validAgentMd);
 
         expect(doc.manifest.metadata.name).toBe('support-bot');
@@ -61,7 +61,7 @@ describe('parseAgent', () => {
         expect(doc.instructions).toContain('---\n\nKeep responses concise.');
     });
 
-    test('parses document with empty instructions', () => {
+    it('parses document with empty instructions', () => {
         const doc = parseAgent(`---
 apiVersion: agent.ekisa.com.co/v1
 kind: Agent
@@ -77,7 +77,7 @@ spec:
         expect(doc.instructions).toBe('');
     });
 
-    test('rejects document missing opening delimiter', () => {
+    it('rejects document missing opening delimiter', () => {
         expect(() =>
             parseAgent(`
 apiVersion: agent.ekisa.com.co/v1
@@ -87,7 +87,7 @@ Prompt here`),
         ).toThrow(ParseError);
     });
 
-    test('rejects document missing closing delimiter', () => {
+    it('rejects document missing closing delimiter', () => {
         expect(() =>
             parseAgent(`---
 apiVersion: agent.ekisa.com.co/v1
@@ -102,7 +102,7 @@ spec:
         ).toThrow(ParseError);
     });
 
-    test('rejects malformed YAML syntax', () => {
+    it('rejects malformed YAML syntax', () => {
         expect(() =>
             parseAgent(`---
 apiVersion: agent.ekisa.com.co/v1
@@ -112,7 +112,7 @@ Hello`),
         ).toThrow(ParseError);
     });
 
-    test('rejects schema violation with ValidationError', () => {
+    it('rejects schema violation with ValidationError', () => {
         expect(() =>
             parseAgent(`---
 apiVersion: agent.ekisa.com.co/v1
@@ -128,7 +128,7 @@ Prompt`),
         ).toThrow(ValidationError);
     });
 
-    test('round-trips document serialization', () => {
+    it('round-trips document serialization', () => {
         const doc = parseAgent(validAgentMd);
         const serialized = stringifyAgent(doc);
         const reparsed = parseAgent(serialized);
@@ -139,7 +139,7 @@ Prompt`),
 });
 
 describe('parseTool', () => {
-    test('parses a valid standalone tool file', () => {
+    it('parses a valid standalone tool file', () => {
         const tool = parseTool(validToolYaml);
 
         expect(tool.name).toBe('lookup-account');
@@ -148,7 +148,7 @@ describe('parseTool', () => {
         expect(tool.inputSchema.type).toBe('object');
     });
 
-    test('rejects invalid JSON Schema in tool definition', () => {
+    it('rejects invalid JSON Schema in tool definition', () => {
         const badTool = `
 name: bad-tool
 description: "A tool with broken schema"
@@ -158,7 +158,7 @@ inputSchema:
         expect(() => parseTool(badTool)).toThrow(ValidationError);
     });
 
-    test('round-trips tool serialization', () => {
+    it('round-trips tool serialization', () => {
         const tool = parseTool(validToolYaml);
         const serialized = stringifyTool(tool);
         const reparsed = parseTool(serialized);

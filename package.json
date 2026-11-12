@@ -14,13 +14,15 @@
     "test": "bun test",
     "test:update-snapshots": "bun test --update-snapshots",
     "taze": "taze minor -wIr",
-    "taze:major": "taze major -wIr"
+    "taze:major": "taze major -wIr",
+    "publish": "",
+    "prepublishOnly": "bun run typecheck && bun run lint && bun run test && bun run nodecheck"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
-    "oxlint-tsgolint": "^7.0.2006",
+    "oxlint-tsgolint": "^7.0.2007",
     "taze": "^21.3.0"
   },
   "peerDependencies": {

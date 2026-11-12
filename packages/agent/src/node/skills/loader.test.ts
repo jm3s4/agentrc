@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -52,7 +52,7 @@ description: Guidance on test preparation.
         await rm(tempDir, { recursive: true, force: true });
     });
 
-    test('loadSkill reads real directory and mounts filesystem resources', async () => {
+    it('loadSkill reads real directory and mounts filesystem resources', async () => {
         const skill = await loadSkill(skillDirA);
 
         expect(skill.name).toBe('appointment-management');
@@ -67,11 +67,11 @@ description: Guidance on test preparation.
         expect(policyRes.mediaType).toBe('text/markdown');
     });
 
-    test('loadSkill throws ParseError when SKILL.md is missing', async () => {
+    it('loadSkill throws ParseError when SKILL.md is missing', async () => {
         expect(loadSkill(join(tempDir, 'not-a-skill'))).rejects.toThrow(ParseError);
     });
 
-    test('discoverSkills finds all valid skills and ignores non-skill directories', async () => {
+    it('discoverSkills finds all valid skills and ignores non-skill directories', async () => {
         const discovered = await discoverSkills(tempDir);
 
         expect(discovered).toHaveLength(2);

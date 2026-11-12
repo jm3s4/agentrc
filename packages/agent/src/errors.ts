@@ -11,7 +11,7 @@ export type ValidationResult<T> =
     | { readonly success: true; readonly data: T }
     | { readonly success: false; readonly issues: readonly SpecIssue[] };
 
-/** Thrown when YAML or JSON syntax is malformed. */
+/** Thrown when input syntax is malformed or a contract check fails. */
 export class ParseError extends Error {
     override readonly name = 'ParseError';
     constructor(
@@ -52,4 +52,12 @@ export function toSpecIssues(issues: readonly v.BaseIssue<unknown>[]): readonly 
         path: formatPath(issue),
         message: issue.message,
     }));
+}
+
+export function parseSchema<T>(schema: v.GenericSchema<unknown, T>, data: unknown, message: string): T {
+    const result = v.safeParse(schema, data);
+    if (result.success) {
+        return result.output;
+    }
+    throw new ValidationError(message, toSpecIssues(result.issues));
 }

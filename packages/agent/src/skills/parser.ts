@@ -1,6 +1,5 @@
-import * as v from 'valibot';
 import { parse as parseYaml, stringify as stringifyYaml, YAMLParseError } from 'yaml';
-import { ParseError, toSpecIssues, ValidationError } from '../errors';
+import { ParseError, parseSchema } from '../errors';
 import { parseFrontmatter } from '../frontmatter';
 import { SkillMetadataSchema, type SkillMetadata, type SkillMetadataInput } from './schema';
 
@@ -31,13 +30,8 @@ export function parseSkill(source: string): ParsedSkill {
         throw new ParseError(`Failed to parse SKILL.md frontmatter: ${detail}`, error);
     }
 
-    const result = v.safeParse(SkillMetadataSchema, parsedYaml);
-    if (!result.success) {
-        throw new ValidationError('Skill metadata validation failed', toSpecIssues(result.issues));
-    }
-
     return {
-        metadata: result.output,
+        metadata: parseSchema(SkillMetadataSchema, parsedYaml, 'Skill metadata validation failed'),
         instructions,
     };
 }
@@ -46,7 +40,7 @@ export function parseSkill(source: string): ParsedSkill {
  * Serializes metadata and instructions into canonical `SKILL.md` format.
  */
 export function stringifySkill(metadata: SkillMetadataInput, instructions = ''): string {
-    const validated = v.parse(SkillMetadataSchema, metadata);
+    const validated = parseSchema(SkillMetadataSchema, metadata, 'Skill metadata validation failed');
     const yamlBlock = stringifyYaml(validated).trim();
     const body = instructions.trim();
 

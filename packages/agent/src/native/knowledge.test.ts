@@ -1,9 +1,9 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { ParseError } from '../errors';
 import { createKnowledgeTool, executeKnowledge, KNOWLEDGE_TOOL_NAME, type KnowledgeRecord } from './knowledge';
 
 describe('createKnowledgeTool', () => {
-    test('generates valid Tool definition conforming to capability', () => {
+    it('generates valid Tool definition conforming to capability', () => {
         const tool = createKnowledgeTool({ sources: ['escano-kb'] });
 
         expect(tool.name).toBe(KNOWLEDGE_TOOL_NAME);
@@ -13,7 +13,7 @@ describe('createKnowledgeTool', () => {
 });
 
 describe('executeKnowledge', () => {
-    test('enforces tenant sources and passes category to consumer handler', async () => {
+    it('enforces tenant sources and passes category to consumer handler', async () => {
         let capturedQuery = '';
         let capturedSources: readonly string[] = [];
         let capturedCategory: string | undefined;
@@ -45,13 +45,13 @@ describe('executeKnowledge', () => {
         expect(results[0]?.title).toBe('Fasting Protocol');
     });
 
-    test('throws ParseError on empty or whitespace query', () => {
+    it('throws ParseError on empty or whitespace query', () => {
         expect(executeKnowledge({ sources: ['kb'] }, { query: '   ', handler: async () => [] })).rejects.toThrow(
             ParseError,
         );
     });
 
-    test('throws ParseError if capability has empty sources list', () => {
+    it('throws ParseError if capability has empty sources list', () => {
         expect(executeKnowledge({ sources: [] }, { query: 'valid query', handler: async () => [] })).rejects.toThrow(
             ParseError,
         );

@@ -42,7 +42,7 @@ export type KnowledgeSearchHandler = (
 ) => Promise<readonly KnowledgeRecord[]>;
 
 /** Options to override the knowledge tool. */
-export type KnowledgeToolOptions = Pick<Tool, 'name' | 'displayName' | 'description'>;
+export type KnowledgeToolOptions = Partial<Pick<Tool, 'name' | 'displayName' | 'description'>>;
 
 /** Options to execute the knowledge tool. */
 export interface ExecuteKnowledgeOptions {

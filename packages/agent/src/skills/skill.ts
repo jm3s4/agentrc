@@ -1,5 +1,4 @@
-import * as v from 'valibot';
-import { ParseError } from '../errors';
+import { ParseError, parseSchema } from '../errors';
 import {
     SkillMetadataSchema,
     type Skill,
@@ -28,7 +27,7 @@ const MIME_MAP: Record<string, string> = {
 };
 
 function basename(p: string): string {
-    const i = p.lastIndexOf('/');
+    const i = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
     return i >= 0 ? p.slice(i + 1) : p;
 }
 
@@ -60,7 +59,11 @@ export interface CreateSkillOptions {
  * Validates metadata, resolves defaults, and wraps resource retrieval.
  */
 export function createSkill(options: CreateSkillOptions): Skill {
-    const metadata: SkillMetadata = v.parse(SkillMetadataSchema, options.metadata);
+    const metadata: SkillMetadata = parseSchema(
+        SkillMetadataSchema,
+        options.metadata,
+        'Skill metadata validation failed',
+    );
     const { instructions, resolver } = options;
 
     return {
@@ -70,8 +73,11 @@ export function createSkill(options: CreateSkillOptions): Skill {
         instructions,
 
         async resource(relativePath: string): Promise<SkillResource> {
-            // Prevent path traversal
-            if (relativePath.includes('..') || relativePath.startsWith('/') || relativePath.startsWith('\\')) {
+            if (
+                !relativePath ||
+                /^([\\/]|[a-zA-Z]:)/.test(relativePath) ||
+                relativePath.split(/[\\/]/).includes('..')
+            ) {
                 throw new ParseError(`Security violation: Invalid resource path (${relativePath})`);
             }
 

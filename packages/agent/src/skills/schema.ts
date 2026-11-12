@@ -1,15 +1,17 @@
 import * as v from 'valibot';
 
+export const SkillNameSchema = v.pipe(
+    v.string(),
+    v.regex(
+        /^[a-z0-9]+(-[a-z0-9]+)*$/,
+        "Skill name must be 1-64 lowercase alphanumeric chars and hyphens (e.g. 'appointment-management')",
+    ),
+    v.maxLength(64, 'Skill name must not exceed 64 characters'),
+);
+
 export const SkillMetadataSchema = v.looseObject({
     /** 1-64 chars, lowercase alphanumeric and hyphens. Matches directory name. */
-    name: v.pipe(
-        v.string(),
-        v.regex(
-            /^[a-z0-9]+(-[a-z0-9]+)*$/,
-            "Skill name must be 1-64 lowercase alphanumeric chars and hyphens (e.g. 'appointment-management')",
-        ),
-        v.maxLength(64, 'Skill name must not exceed 64 characters'),
-    ),
+    name: SkillNameSchema,
 
     /** 1-1024 characters describing what the skill does and when to activate it. */
     description: v.pipe(
@@ -28,7 +30,7 @@ export const SkillMetadataSchema = v.looseObject({
     'allowed-tools': v.optional(v.pipe(v.string(), v.minLength(1))),
 
     /** Arbitrary key-value metadata mapping string keys to string values. */
-    metadata: v.optional(v.record(v.string(), v.string()), {}),
+    metadata: v.optional(v.record(v.string(), v.string()), () => ({})),
 });
 
 export type SkillMetadata = v.InferOutput<typeof SkillMetadataSchema>;

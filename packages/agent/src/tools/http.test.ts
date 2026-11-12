@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it, test } from 'bun:test';
 import type { Tool } from '../spec/schema';
 import { executeHttpTool } from './http';
 
@@ -22,16 +22,16 @@ const textResponseMock = (async () =>
 const errorResponseMock = (async () =>
     new Response('Database deadlock error in clinic backend', { status: 500 })) as unknown as typeof fetch;
 
+const getTool = (url: string): Tool => ({
+    ...baseTool,
+    execution: { type: 'http', method: 'GET', url },
+});
+
 describe('executeHttpTool - Security & SSRF Protection', () => {
     test.each(['file:///etc/passwd', 'ftp://ftp.example.com', 'gopher://evil.com', 'javascript:alert(1)'])(
         'rejects forbidden protocol %p',
         async (url) => {
-            const tool: Tool = {
-                ...baseTool,
-                execution: { type: 'http', method: 'GET', url },
-            };
-
-            expect(executeHttpTool(tool, { args: {} })).rejects.toThrow(/Protocol '.*' is forbidden/);
+            expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(/Protocol '.*' is forbidden/);
         },
     );
 
@@ -41,47 +41,28 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
         'http://0.0.0.0/status',
         'http://[::1]/debug',
     ])('blocks loopback address %p by default', async (url) => {
-        const tool: Tool = {
-            ...baseTool,
-            execution: { type: 'http', method: 'GET', url },
-        };
-
-        expect(executeHttpTool(tool, { args: {} })).rejects.toThrow(/Access to loopback address '.*' is blocked/);
+        expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(
+            /Access to loopback address '.*' is blocked/,
+        );
     });
 
-    test('permits loopback address when allowLoopback: true', async () => {
-        let called = false;
-        const mockFetch = (async () => {
-            called = true;
-            return new Response('ok');
-        }) as unknown as typeof fetch;
-
-        const tool: Tool = {
-            ...baseTool,
-            execution: { type: 'http', method: 'GET', url: 'http://localhost:3000/test' },
-        };
-
-        await executeHttpTool(tool, {
+    it('permits loopback address when allowLoopback: true', async () => {
+        const result = await executeHttpTool(getTool('http://localhost:3000/test'), {
             args: {},
-            fetch: mockFetch,
+            fetch: textResponseMock,
             security: { allowLoopback: true },
         });
 
-        expect(called).toBe(true);
+        expect(result).toBe('OK - Request Received');
     });
 
     test.each(['http://169.254.169.254/latest/meta-data', 'http://169.254.1.1/info'])(
         'strictly blocks cloud metadata address %p',
         async (url) => {
-            const tool: Tool = {
-                ...baseTool,
-                execution: { type: 'http', method: 'GET', url },
-            };
-
             expect(
-                executeHttpTool(tool, {
+                executeHttpTool(getTool(url), {
                     args: {},
-                    security: { allowPrivateIps: true, allowLoopback: true }, // Should still block metadata
+                    security: { allowPrivateIps: true, allowLoopback: true },
                 }),
             ).rejects.toThrow(/cloud metadata/);
         },
@@ -90,44 +71,25 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
     test.each(['http://10.0.0.1/admin', 'http://192.168.1.1/router', 'http://172.16.0.5/api'])(
         'blocks private subnet address %p by default',
         async (url) => {
-            const tool: Tool = {
-                ...baseTool,
-                execution: { type: 'http', method: 'GET', url },
-            };
-
-            expect(executeHttpTool(tool, { args: {} })).rejects.toThrow(/Access to private subnet IP '.*' is blocked/);
+            expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(
+                /Access to private subnet IP '.*' is blocked/,
+            );
         },
     );
 
-    test('permits private subnet address when allowPrivateIps: true', async () => {
-        let called = false;
-        const mockFetch = (async () => {
-            called = true;
-            return new Response('ok');
-        }) as unknown as typeof fetch;
-
-        const tool: Tool = {
-            ...baseTool,
-            execution: { type: 'http', method: 'GET', url: 'http://10.0.0.1/api' },
-        };
-
-        await executeHttpTool(tool, {
+    it('permits private subnet address when allowPrivateIps: true', async () => {
+        const result = await executeHttpTool(getTool('http://10.0.0.1/api'), {
             args: {},
-            fetch: mockFetch,
+            fetch: textResponseMock,
             security: { allowPrivateIps: true },
         });
 
-        expect(called).toBe(true);
+        expect(result).toBe('OK - Request Received');
     });
 
-    test('enforces allowedHosts whitelist', async () => {
-        const tool: Tool = {
-            ...baseTool,
-            execution: { type: 'http', method: 'GET', url: 'https://unauthorized.domain.com/data' },
-        };
-
+    it('enforces allowedHosts whitelist', async () => {
         expect(
-            executeHttpTool(tool, {
+            executeHttpTool(getTool('https://unauthorized.domain.com/data'), {
                 args: {},
                 security: { allowedHosts: ['api.clinic.com', 'trusted.org'] },
             }),
@@ -136,7 +98,7 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
 });
 
 describe('executeHttpTool - Request Execution & Interpolation', () => {
-    test('executes POST request with interpolated URL, headers, and body', async () => {
+    it('executes POST request with interpolated URL, headers, and body', async () => {
         let capturedUrl = '';
         let capturedHeaders: Headers | undefined;
         let capturedBody = '';
@@ -183,7 +145,7 @@ describe('executeHttpTool - Request Execution & Interpolation', () => {
         expect(result).toEqual({ success: true, slotId: 456 });
     });
 
-    test('returns plain text when response is not JSON', async () => {
+    it('returns plain text when response is not JSON', async () => {
         const result = await executeHttpTool(baseTool, {
             args: {},
             fetch: textResponseMock,
@@ -192,7 +154,7 @@ describe('executeHttpTool - Request Execution & Interpolation', () => {
         expect(result).toBe('OK - Request Received');
     });
 
-    test('throws ParseError on non-2xx HTTP status codes with response snippet', async () => {
+    it('throws ParseError on non-2xx HTTP status codes with response snippet', async () => {
         expect(
             executeHttpTool(baseTool, {
                 args: {},
@@ -201,7 +163,7 @@ describe('executeHttpTool - Request Execution & Interpolation', () => {
         ).rejects.toThrow(/HTTP GET test-tool failed with status 500: Database deadlock error/);
     });
 
-    test('throws ParseError when tool does not have execution block', async () => {
+    it('throws ParseError when tool does not have execution block', async () => {
         const unexecutableTool: Tool = {
             name: 'noop-tool',
             description: 'A tool without execution metadata',

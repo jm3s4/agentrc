@@ -19,8 +19,12 @@ export function createMemoryResolver(
         async list() {
             const results: string[] = [];
             for (const [key] of files) {
-                if (key.startsWith(p) && !key.endsWith('SKILL.md')) {
-                    results.push(key.slice(p.length));
+                if (!key.startsWith(p)) {
+                    continue;
+                }
+                const rel = key.slice(p.length);
+                if (rel && rel !== 'SKILL.md') {
+                    results.push(rel);
                 }
             }
             return results;

@@ -43,16 +43,19 @@ export async function discoverSkills(parentDirectory: string): Promise<readonly 
 
     for (const entry of entries) {
         const dir = join(parentDirectory, entry);
+        let content: string;
         try {
-            const content = await readFile(join(dir, 'SKILL.md'), 'utf-8');
-            const { metadata } = parseSkill(content);
-            summaries.push({
-                name: metadata.name,
-                description: metadata.description,
-            });
+            content = await readFile(join(dir, 'SKILL.md'), 'utf-8');
         } catch {
-            // Not a skill folder; ignore
+            continue; // Not a skill folder; ignore
         }
+
+        const { metadata } = parseSkill(content);
+        summaries.push({
+            name: metadata.name,
+            description: metadata.description,
+            path: dir,
+        });
     }
 
     return summaries;

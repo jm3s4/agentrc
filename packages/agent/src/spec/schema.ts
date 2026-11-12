@@ -1,5 +1,6 @@
 import { Ajv } from 'ajv';
 import * as v from 'valibot';
+import { SkillNameSchema } from '../skills';
 
 const ajv = new Ajv({ strict: false });
 
@@ -38,16 +39,15 @@ const SemverSchema = v.pipe(
     v.regex(SEMVER_REGEX, "Version must be a valid SemVer string (e.g. '1.4.0', '2.0.0-beta.1')"),
 );
 
+const KebabNameSchema = (label: string) =>
+    v.pipe(v.string(), v.regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, `${label} must be kebab-case`));
+
 // Skill definitions
 
 export const SkillRefSchema = v.union([
     v.string(),
     v.strictObject({
-        name: v.pipe(
-            v.string(),
-            v.regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
-            v.maxLength(64, 'Skill name must not exceed 64 characters'),
-        ),
+        name: SkillNameSchema,
         version: SemverSchema,
     }),
 ]);
@@ -66,7 +66,7 @@ export const HttpExecutionSchema = v.strictObject({
 export type HttpExecution = v.InferOutput<typeof HttpExecutionSchema>;
 
 export const ToolSchema = v.strictObject({
-    name: v.pipe(v.string(), v.regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, 'Tool name must be kebab-case')),
+    name: KebabNameSchema('Tool name'),
     displayName: v.optional(v.pipe(v.string(), v.minLength(1))),
     description: v.pipe(v.string(), v.minLength(10, 'Tool description must be at least 10 characters')),
     inputSchema: JsonSchemaSchema,
@@ -113,7 +113,21 @@ export const LocaleSchema = v.strictObject({
         v.pipe(v.string(), v.regex(/^[a-z]{2}(-[A-Z]{2})?$/, "Language must be an ISO 639 tag (e.g. 'es' or 'es-CO')")),
         'en-US',
     ),
-    timeZone: v.optional(v.pipe(v.string(), v.minLength(1, "Time zone is required (e.g. 'America/Bogota')")), 'UTC'),
+    timeZone: v.optional(
+        v.pipe(
+            v.string(),
+            v.minLength(1, "Time zone is required (e.g. 'America/Bogota')"),
+            v.check((input) => {
+                try {
+                    Intl.DateTimeFormat(undefined, { timeZone: input });
+                    return true;
+                } catch {
+                    return false;
+                }
+            }, "Time zone must be a valid IANA identifier (e.g. 'America/Bogota', 'UTC')"),
+        ),
+        'UTC',
+    ),
 });
 
 export type Locale = v.InferOutput<typeof LocaleSchema>;
@@ -158,14 +172,14 @@ export type Capabilities = v.InferOutput<typeof CapabilitiesSchema>;
 // Metadata
 
 export const AgentMetadataSchema = v.looseObject({
-    name: v.pipe(v.string(), v.regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, 'Manifest name must be kebab-case')),
+    name: KebabNameSchema('Manifest name'),
     version: SemverSchema,
     displayName: v.optional(v.pipe(v.string(), v.minLength(1))),
     description: v.optional(v.pipe(v.string(), v.minLength(1))),
     icon: v.optional(v.string()),
-    tags: v.optional(v.array(v.string()), []),
-    suggestions: v.optional(v.array(SuggestionSchema), []),
-    annotations: v.optional(v.record(v.string(), v.unknown()), {}),
+    tags: v.optional(v.array(v.string()), () => []),
+    suggestions: v.optional(v.array(SuggestionSchema), () => []),
+    annotations: v.optional(v.record(v.string(), v.unknown()), () => ({})),
 });
 
 export type AgentMetadata = v.InferOutput<typeof AgentMetadataSchema>;
@@ -173,12 +187,12 @@ export type AgentMetadata = v.InferOutput<typeof AgentMetadataSchema>;
 // Spec and root
 
 export const AgentSpecSchema = v.strictObject({
-    locale: v.optional(LocaleSchema, v.parse(LocaleSchema, {})),
+    locale: v.optional(LocaleSchema, () => v.parse(LocaleSchema, {})),
     model: ModelSchema,
-    runtime: v.optional(RuntimeSchema, v.parse(RuntimeSchema, {})),
+    runtime: v.optional(RuntimeSchema, () => v.parse(RuntimeSchema, {})),
     capabilities: v.optional(CapabilitiesSchema),
-    skills: v.optional(v.array(SkillRefSchema), []),
-    tools: v.optional(v.array(ToolRefSchema), []),
+    skills: v.optional(v.array(SkillRefSchema), () => []),
+    tools: v.optional(v.array(ToolRefSchema), () => []),
 });
 
 export type AgentSpec = v.InferOutput<typeof AgentSpecSchema>;

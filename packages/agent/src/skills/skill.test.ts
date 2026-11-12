@@ -1,9 +1,9 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it, test } from 'bun:test';
 import { ParseError } from '../errors';
 import { createSkill } from './skill';
 
 describe('createSkill', () => {
-    test('creates skill with minimal metadata (omitting optional metadata field)', () => {
+    it('creates skill with minimal metadata (omitting optional metadata field)', () => {
         const skill = createSkill({
             metadata: {
                 name: 'minimal-skill',
@@ -19,7 +19,7 @@ describe('createSkill', () => {
         expect(skill.metadata.metadata).toEqual({});
     });
 
-    test('creates skill with full metadata', () => {
+    it('creates skill with full metadata', () => {
         const skill = createSkill({
             metadata: {
                 name: 'full-skill',
@@ -37,7 +37,7 @@ describe('createSkill', () => {
         expect(skill.metadata.metadata).toEqual({ key: 'value' });
     });
 
-    test('throws immediately if metadata fails schema validation', () => {
+    it('throws immediately if metadata fails schema validation', () => {
         expect(() =>
             createSkill({
                 metadata: {
@@ -49,7 +49,7 @@ describe('createSkill', () => {
         ).toThrow();
     });
 
-    test('skills without resolvers return empty resource lists and throw on read', async () => {
+    it('skills without resolvers return empty resource lists and throw on read', async () => {
         const skill = createSkill({
             metadata: { name: 'prompt-only', description: 'Has no files.' },
             instructions: 'Instructions',
@@ -78,44 +78,37 @@ describe('createSkill', () => {
         expect(skill.resource(badPath)).rejects.toThrow(ParseError);
     });
 
-    test('infers media types correctly across common extensions', async () => {
-        const files: Record<string, string> = {
-            'references/guide.md': '# Guide',
-            'references/data.json': '{"foo": "bar"}',
-            'references/table.csv': 'col1,col2',
-            'assets/icon.svg': '<svg></svg>',
-            'assets/logo.png': 'png-data',
-            'scripts/run.py': 'print("hello")',
-            'references/unknown.custom': 'raw data',
+    it('infers media types correctly across common extensions', async () => {
+        const expected: Record<string, [content: string, mediaType: string]> = {
+            'references/guide.md': ['# Guide', 'text/markdown'],
+            'references/data.json': ['{"foo": "bar"}', 'application/json'],
+            'references/table.csv': ['col1,col2', 'text/csv'],
+            'assets/icon.svg': ['<svg></svg>', 'image/svg+xml'],
+            'assets/logo.png': ['png-data', 'image/png'],
+            'scripts/run.py': ['print("hello")', 'text/x-python'],
+            'references/unknown.custom': ['raw data', 'application/octet-stream'],
         };
 
         const skill = createSkill({
             metadata: { name: 'mime-skill', description: 'Tests MIME types.' },
             instructions: 'test',
             resolver: {
-                read: async (path) => files[path] ?? '',
-                list: async () => Object.keys(files),
+                read: async (path) => expected[path]?.[0] ?? '',
+                list: async () => Object.keys(expected),
             },
         });
 
         const resources = await skill.listResources();
-        expect(resources).toHaveLength(7);
+        expect(resources).toHaveLength(Object.keys(expected).length);
 
-        const md = await skill.resource('references/guide.md');
-        expect(md.mediaType).toBe('text/markdown');
-        expect(await md.text()).toBe('# Guide');
-
-        const json = await skill.resource('references/data.json');
-        expect(json.mediaType).toBe('application/json');
-
-        const py = await skill.resource('scripts/run.py');
-        expect(py.mediaType).toBe('text/x-python');
-
-        const unknown = await skill.resource('references/unknown.custom');
-        expect(unknown.mediaType).toBe('application/octet-stream');
+        for (const [path, [content, mediaType]] of Object.entries(expected)) {
+            const res = await skill.resource(path);
+            expect(res.mediaType).toBe(mediaType);
+            expect(await res.text()).toBe(content);
+        }
     });
 
-    test('seamlessly converts text() and bytes() regardless of resolver return type', async () => {
+    it('seamlessly converts text() and bytes() regardless of resolver return type', async () => {
         const encoder = new TextEncoder();
         const binaryData = encoder.encode('Raw binary bytes');
 

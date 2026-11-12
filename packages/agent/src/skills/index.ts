@@ -1,4 +1,4 @@
-import * as v from 'valibot';
+import { parseSchema } from '../errors';
 import { SkillMetadataSchema, type SkillMetadata, type SkillMetadataInput, type SkillSummary } from './schema';
 
 export * from './parser';
@@ -17,7 +17,7 @@ export function defineSkill(
     readonly instructions: string;
 } {
     return {
-        metadata: v.parse(SkillMetadataSchema, metadata),
+        metadata: parseSchema(SkillMetadataSchema, metadata, 'Skill metadata validation failed'),
         instructions: instructions.trim(),
     };
 }
@@ -31,6 +31,17 @@ export function formatSkillCatalog(skills: readonly SkillSummary[]): string {
         return '';
     }
 
-    const entries = skills.map((s) => `  <skill name="${s.name}">\n    ${s.description}\n  </skill>`);
+    const entries = skills.map(
+        (s) => `  <skill name="${escapeXml(s.name)}">\n    ${escapeXml(s.description)}\n  </skill>`,
+    );
     return `<available_skills>\n${entries.join('\n')}\n</available_skills>`;
+}
+
+function escapeXml(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&apos;');
 }

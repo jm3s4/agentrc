@@ -18,8 +18,9 @@
     "test:update-snapshots": "vitest run -u",
     "taze": "taze minor -wIr",
     "taze:major": "taze major -wIr",
-    "jsr:check": "pnpm dlx jsr publish --dry-run --allow-slow-types",
     "check": "pnpm typecheck && pnpm lint && pnpm fmt:check && pnpm test && pnpm nodecheck",
+    "check:jsr": "pnpm dlx jsr publish --dry-run --allow-slow-types",
+    "version": "node scripts/sync-version.mjs && git add jsr.json",
     "prepublishOnly": "pnpm check"
   },
   "dependencies": {

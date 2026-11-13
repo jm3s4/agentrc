@@ -1,5 +1,5 @@
-import { describe, expect, it, test } from 'bun:test';
 import * as v from 'valibot';
+import { describe, expect, it, test } from 'vitest';
 import {
     AgentMetadataSchema,
     AgentSchema,
@@ -14,7 +14,7 @@ import {
     SuggestionSchema,
     ToolRefSchema,
     ToolSchema,
-} from '../../lib';
+} from '../../lib/index.ts';
 
 function ok<T>(schema: v.GenericSchema<unknown, T>, input: unknown): T {
     return v.parse(schema, input);

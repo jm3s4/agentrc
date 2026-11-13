@@ -1,5 +1,5 @@
-import { ParseError } from '../errors';
-import type { SkillResourceResolver } from './schema';
+import { ParseError } from '../errors.ts';
+import type { SkillResourceResolver } from './schema.ts';
 
 /** Resolves resources from an in-memory virtual file map (e.g. OCI bundles). */
 export function createMemoryResolver(

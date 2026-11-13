@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { ParseError, parseFrontmatter } from '../lib';
+import { describe, expect, it } from 'vitest';
+import { ParseError, parseFrontmatter } from '../lib/index.ts';
 
 describe('parseFrontmatter', () => {
     it('parses frontmatter and body', () => {

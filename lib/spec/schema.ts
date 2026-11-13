@@ -1,6 +1,6 @@
 import { Ajv } from 'ajv';
 import * as v from 'valibot';
-import { SkillNameSchema } from '../skills/schema';
+import { SkillNameSchema } from '../skills/schema.ts';
 
 const ajv = new Ajv({ strict: false });
 

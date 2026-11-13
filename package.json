@@ -7,18 +7,20 @@
     "./node": "./lib/node/index.ts"
   },
   "scripts": {
-    "typecheck": "bun check",
+    "typecheck": "tsc --noEmit",
     "nodecheck": "bash scripts/check-node-imports.sh",
     "lint": "oxlint --type-aware .",
     "lint:fix": "oxlint --type-aware --fix .",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
-    "test": "bun test",
-    "test:update-snapshots": "bun test --update-snapshots",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:update-snapshots": "vitest run -u",
     "taze": "taze minor -wIr",
     "taze:major": "taze major -wIr",
-    "publish": "",
-    "prepublishOnly": "bun run typecheck && bun run lint && bun run test && bun run nodecheck"
+    "jsr:check": "pnpm dlx jsr publish --dry-run --allow-slow-types",
+    "check": "pnpm typecheck && pnpm lint && pnpm fmt:check && pnpm test && pnpm nodecheck",
+    "prepublishOnly": "pnpm check"
   },
   "dependencies": {
     "ajv": "^8.20.0",
@@ -27,11 +29,12 @@
     "yaml": "^2.9.1"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/node": "^26.6.6",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
     "oxlint-tsgolint": "^7.0.2007",
-    "taze": "^21.3.0"
+    "taze": "^21.3.0",
+    "vitest": "^5.1.0"
   },
   "peerDependencies": {
     "typescript": "^7"

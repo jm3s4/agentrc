@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { buildSystemInstructions, formatTemporalContext, type AgentDocument } from '../lib';
+import { describe, expect, it } from 'vitest';
+import { buildSystemInstructions, formatTemporalContext, type AgentDocument } from '../lib/index.ts';
 
 const locale = {
     language: 'en-US',

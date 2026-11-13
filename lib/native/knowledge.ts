@@ -1,5 +1,5 @@
-import { ParseError } from '../errors';
-import type { KnowledgeCapability, Tool } from '../spec/schema';
+import { ParseError } from '../errors.ts';
+import type { KnowledgeCapability, Tool } from '../spec/schema.ts';
 
 /** Canonical tool name for the native knowledge capability. */
 export const KNOWLEDGE_TOOL_NAME = 'search-knowledge';

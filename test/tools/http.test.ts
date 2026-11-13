@@ -1,5 +1,5 @@
-import { describe, expect, it, test } from 'bun:test';
-import { executeHttpTool, type Tool } from '../../lib';
+import { describe, expect, it, test } from 'vitest';
+import { executeHttpTool, type Tool } from '../../lib/index.ts';
 
 const baseTool: Tool = {
     name: 'test-tool',
@@ -30,7 +30,7 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
     test.each(['file:///etc/passwd', 'ftp://ftp.example.com', 'gopher://evil.com', 'javascript:alert(1)'])(
         'rejects forbidden protocol %p',
         async (url) => {
-            expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(/Protocol '.*' is forbidden/);
+            await expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(/Protocol '.*' is forbidden/);
         },
     );
 
@@ -40,7 +40,7 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
         'http://0.0.0.0/status',
         'http://[::1]/debug',
     ])('blocks loopback address %p by default', async (url) => {
-        expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(
+        await expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(
             /Access to loopback address '.*' is blocked/,
         );
     });
@@ -58,7 +58,7 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
     test.each(['http://169.254.169.254/latest/meta-data', 'http://169.254.1.1/info'])(
         'strictly blocks cloud metadata address %p',
         async (url) => {
-            expect(
+            await expect(
                 executeHttpTool(getTool(url), {
                     args: {},
                     security: { allowPrivateIps: true, allowLoopback: true },
@@ -70,7 +70,7 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
     test.each(['http://10.0.0.1/admin', 'http://192.168.1.1/router', 'http://172.16.0.5/api'])(
         'blocks private subnet address %p by default',
         async (url) => {
-            expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(
+            await expect(executeHttpTool(getTool(url), { args: {} })).rejects.toThrow(
                 /Access to private subnet IP '.*' is blocked/,
             );
         },
@@ -87,7 +87,7 @@ describe('executeHttpTool - Security & SSRF Protection', () => {
     });
 
     it('enforces allowedHosts whitelist', async () => {
-        expect(
+        await expect(
             executeHttpTool(getTool('https://unauthorized.domain.com/data'), {
                 args: {},
                 security: { allowedHosts: ['api.clinic.com', 'trusted.org'] },
@@ -154,7 +154,7 @@ describe('executeHttpTool - Request Execution & Interpolation', () => {
     });
 
     it('throws ParseError on non-2xx HTTP status codes with response snippet', async () => {
-        expect(
+        await expect(
             executeHttpTool(baseTool, {
                 args: {},
                 fetch: errorResponseMock,
@@ -169,7 +169,7 @@ describe('executeHttpTool - Request Execution & Interpolation', () => {
             inputSchema: { type: 'object' },
         };
 
-        expect(executeHttpTool(unexecutableTool, { args: {} })).rejects.toThrow(
+        await expect(executeHttpTool(unexecutableTool, { args: {} })).rejects.toThrow(
             /does not have an HTTP execution contract/,
         );
     });

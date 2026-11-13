@@ -1,2 +1,2 @@
-export * from './skills/loader';
-export * from './skills/resolver';
+export * from './skills/loader.ts';
+export * from './skills/resolver.ts';

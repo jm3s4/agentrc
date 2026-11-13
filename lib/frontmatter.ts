@@ -1,4 +1,4 @@
-import { ParseError } from './errors';
+import { ParseError } from './errors.ts';
 
 /**
  * Parses YAML frontmatter and document body.

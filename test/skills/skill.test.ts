@@ -1,5 +1,5 @@
-import { describe, expect, it, test } from 'bun:test';
-import { createSkill, ParseError } from '../../lib';
+import { describe, expect, it, test } from 'vitest';
+import { createSkill, ParseError } from '../../lib/index.ts';
 
 describe('createSkill', () => {
     it('creates skill with minimal metadata (omitting optional metadata field)', () => {
@@ -55,7 +55,7 @@ describe('createSkill', () => {
         });
 
         expect(await skill.listResources()).toEqual([]);
-        expect(skill.resource('references/file.md')).rejects.toThrow(ParseError);
+        await expect(skill.resource('references/file.md')).rejects.toThrow(ParseError);
     });
 
     test.each([
@@ -74,7 +74,7 @@ describe('createSkill', () => {
             },
         });
 
-        expect(skill.resource(badPath)).rejects.toThrow(ParseError);
+        await expect(skill.resource(badPath)).rejects.toThrow(ParseError);
     });
 
     it('infers media types correctly across common extensions', async () => {

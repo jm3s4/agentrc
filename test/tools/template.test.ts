@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { ParseError, resolveTemplate, resolveTemplateRecord } from '../../lib';
+import { describe, expect, it } from 'vitest';
+import { ParseError, resolveTemplate, resolveTemplateRecord } from '../../lib/index.ts';
 
 describe('resolveTemplate', () => {
     it('interpolates arguments with URL encoding when encodeUrl: true', () => {

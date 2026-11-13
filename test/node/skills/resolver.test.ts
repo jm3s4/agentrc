@@ -1,9 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it, test } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ParseError } from '../../../lib';
-import { createFsResolver } from '../../../lib/node';
+import { afterAll, beforeAll, describe, expect, it, test } from 'vitest';
+import { ParseError } from '../../../lib/index.ts';
+import { createFsResolver } from '../../../lib/node/index.ts';
 
 function toText(bytes: string | Uint8Array): string {
     return typeof bytes === 'string' ? bytes : new TextDecoder().decode(bytes);
@@ -64,7 +64,7 @@ describe('Filesystem Resolver (createFsResolver)', () => {
             'rejects escaping path %p',
             async (badPath) => {
                 const resolver = createFsResolver(skillDir);
-                expect(resolver.read(badPath)).rejects.toBeInstanceOf(ParseError);
+                await expect(resolver.read(badPath)).rejects.toBeInstanceOf(ParseError);
             },
         );
     });

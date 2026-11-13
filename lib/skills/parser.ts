@@ -1,7 +1,7 @@
 import { parse as parseYaml, stringify as stringifyYaml, YAMLParseError } from 'yaml';
-import { ParseError, parseSchema } from '../errors';
-import { parseFrontmatter } from '../frontmatter';
-import { SkillMetadataSchema, type SkillMetadata, type SkillMetadataInput } from './schema';
+import { ParseError, parseSchema } from '../errors.ts';
+import { parseFrontmatter } from '../frontmatter.ts';
+import { SkillMetadataSchema, type SkillMetadata, type SkillMetadataInput } from './schema.ts';
 
 /** Parsed skill metadata and instructions. */
 export interface ParsedSkill {

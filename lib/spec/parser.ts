@@ -1,8 +1,8 @@
 import { parse as parseYaml, stringify as stringifyYaml, YAMLParseError } from 'yaml';
-import { ParseError, ValidationError } from '../errors';
-import { parseFrontmatter } from '../frontmatter';
-import type { Agent, Tool } from './schema';
-import { validateAgent, validateTool } from './validator';
+import { ParseError, ValidationError } from '../errors.ts';
+import { parseFrontmatter } from '../frontmatter.ts';
+import type { Agent, Tool } from './schema.ts';
+import { validateAgent, validateTool } from './validator.ts';
 
 /** Complete representation of an `AGENT.md` document. */
 export interface AgentDocument {

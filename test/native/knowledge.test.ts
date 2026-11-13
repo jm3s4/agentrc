@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import {
     createKnowledgeTool,
     executeKnowledge,
     KNOWLEDGE_TOOL_NAME,
     ParseError,
     type KnowledgeRecord,
-} from '../../lib';
+} from '../../lib/index.ts';
 
 describe('createKnowledgeTool', () => {
     it('generates valid Tool definition conforming to capability', () => {
@@ -50,15 +50,15 @@ describe('executeKnowledge', () => {
         expect(results[0]?.title).toBe('Fasting Protocol');
     });
 
-    it('throws ParseError on empty or whitespace query', () => {
-        expect(executeKnowledge({ sources: ['kb'] }, { query: '   ', handler: async () => [] })).rejects.toThrow(
+    it('throws ParseError on empty or whitespace query', async () => {
+        await expect(executeKnowledge({ sources: ['kb'] }, { query: '   ', handler: async () => [] })).rejects.toThrow(
             ParseError,
         );
     });
 
-    it('throws ParseError if capability has empty sources list', () => {
-        expect(executeKnowledge({ sources: [] }, { query: 'valid query', handler: async () => [] })).rejects.toThrow(
-            ParseError,
-        );
+    it('throws ParseError if capability has empty sources list', async () => {
+        await expect(
+            executeKnowledge({ sources: [] }, { query: 'valid query', handler: async () => [] }),
+        ).rejects.toThrow(ParseError);
     });
 });

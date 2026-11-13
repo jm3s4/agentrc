@@ -1,7 +1,7 @@
 import { readdir, readFile, realpath } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
-import { ParseError } from '../../errors';
-import type { SkillResourceResolver } from '../../skills/schema';
+import { ParseError } from '../../errors.ts';
+import type { SkillResourceResolver } from '../../skills/schema.ts';
 
 /** Resolves resources from the local filesystem with path traversal protection. */
 export function createFsResolver(rootDir: string): SkillResourceResolver {

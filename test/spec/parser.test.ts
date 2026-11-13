@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { parseAgent, ParseError, parseTool, stringifyAgent, stringifyTool, ValidationError } from '../../lib';
+import { describe, expect, it } from 'vitest';
+import { parseAgent, ParseError, parseTool, stringifyAgent, stringifyTool, ValidationError } from '../../lib/index.ts';
 
 const validAgentMd = `---
 apiVersion: agent.ekisa.com.co/v1

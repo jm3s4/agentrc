@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { createMemoryResolver, ParseError } from '../../lib';
+import { describe, expect, it } from 'vitest';
+import { createMemoryResolver, ParseError } from '../../lib/index.ts';
 
 describe('createMemoryResolver (OCI / Virtual Bundles)', () => {
     it('resolves files from virtual Map with directory prefix', async () => {
@@ -18,6 +18,6 @@ describe('createMemoryResolver (OCI / Virtual Bundles)', () => {
         const content = await resolver.read('references/priority.md');
         expect(content).toContain('Level 1: Urgent');
 
-        expect(resolver.read('references/missing.md')).rejects.toThrow(ParseError);
+        await expect(resolver.read('references/missing.md')).rejects.toThrow(ParseError);
     });
 });

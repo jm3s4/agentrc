@@ -1,7 +1,7 @@
 import ipaddr from 'ipaddr.js';
-import { ParseError } from '../errors';
-import type { HttpExecution, Tool } from '../spec/schema';
-import { resolveTemplate, resolveTemplateRecord, type TemplateContext } from './template';
+import { ParseError } from '../errors.ts';
+import type { HttpExecution, Tool } from '../spec/schema.ts';
+import { resolveTemplate, resolveTemplateRecord, type TemplateContext } from './template.ts';
 
 /** Security policy for HTTP tool execution to prevent SSRF attacks. */
 export interface HttpSecurityOptions {

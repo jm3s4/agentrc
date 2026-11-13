@@ -1,10 +1,10 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ParseError } from '../../errors';
-import { parseSkill } from '../../skills/parser';
-import type { Skill, SkillSummary } from '../../skills/schema';
-import { createSkill } from '../../skills/skill';
-import { createFsResolver } from './resolver';
+import { ParseError } from '../../errors.ts';
+import { parseSkill } from '../../skills/parser.ts';
+import type { Skill, SkillSummary } from '../../skills/schema.ts';
+import { createSkill } from '../../skills/skill.ts';
+import { createFsResolver } from './resolver.ts';
 
 /**
  * Loads a Skill from local disk.

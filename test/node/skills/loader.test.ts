@@ -1,9 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ParseError } from '../../../lib';
-import { discoverSkills, loadSkill } from '../../../lib/node';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { ParseError } from '../../../lib/index.ts';
+import { discoverSkills, loadSkill } from '../../../lib/node/index.ts';
 
 describe('Filesystem Loader (loadSkill & discoverSkills)', () => {
     let tempDir: string;
@@ -68,7 +68,7 @@ description: Guidance on test preparation.
     });
 
     it('loadSkill throws ParseError when SKILL.md is missing', async () => {
-        expect(loadSkill(join(tempDir, 'not-a-skill'))).rejects.toThrow(ParseError);
+        await expect(loadSkill(join(tempDir, 'not-a-skill'))).rejects.toThrow(ParseError);
     });
 
     it('discoverSkills finds all valid skills and ignores non-skill directories', async () => {

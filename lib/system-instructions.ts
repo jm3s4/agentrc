@@ -1,7 +1,7 @@
-import type { SkillSummary } from './skills/schema';
-import { formatSkillCatalog } from './skills/skill';
-import type { AgentDocument } from './spec/parser';
-import type { Locale } from './spec/schema';
+import type { SkillSummary } from './skills/schema.ts';
+import { formatSkillCatalog } from './skills/skill.ts';
+import type { AgentDocument } from './spec/parser.ts';
+import type { Locale } from './spec/schema.ts';
 
 /** Options for formatting the temporal context block. */
 export interface FormatTemporalOptions {

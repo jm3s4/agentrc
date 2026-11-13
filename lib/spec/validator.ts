@@ -1,6 +1,6 @@
 import * as v from 'valibot';
-import { toSpecIssues, type ValidationResult } from '../errors';
-import { AgentSchema, ToolSchema, type Agent, type Tool } from './schema';
+import { toSpecIssues, type ValidationResult } from '../errors.ts';
+import { AgentSchema, ToolSchema, type Agent, type Tool } from './schema.ts';
 
 /**
  * Validates unknown data against the {@link AgentSchema} without throwing.

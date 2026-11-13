@@ -1,4 +1,4 @@
-import { ParseError, parseSchema } from '../errors';
+import { ParseError, parseSchema } from '../errors.ts';
 import {
     SkillMetadataSchema,
     type Skill,
@@ -8,7 +8,7 @@ import {
     type SkillResourceResolver,
     type SkillResourceSummary,
     type SkillSummary,
-} from './schema';
+} from './schema.ts';
 
 const MIME_MAP: Record<string, string> = {
     '.md': 'text/markdown',

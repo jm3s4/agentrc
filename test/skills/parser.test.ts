@@ -1,5 +1,5 @@
-import { describe, expect, it, test } from 'bun:test';
 import * as v from 'valibot';
+import { describe, expect, it, test } from 'vitest';
 import {
     defineSkill,
     formatSkillCatalog,
@@ -8,7 +8,7 @@ import {
     SkillMetadataSchema,
     stringifySkill,
     ValidationError,
-} from '../../lib';
+} from '../../lib/index.ts';
 
 const validSkillMd = `---
 name: appointment-management

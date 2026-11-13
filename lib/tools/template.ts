@@ -1,4 +1,4 @@
-import { ParseError } from '../errors';
+import { ParseError } from '../errors.ts';
 
 /** Context passed to template resolution functions. */
 export interface TemplateContext {

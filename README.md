@@ -1,38 +1,28 @@
-# agent
+# agentrc
 
-[![CI](https://github.com/jm3s4/agent/actions/workflows/ci.yaml/badge.svg)](https://github.com/jm3s4/agent/actions/workflows/ci.yaml)
+[![CI](https://github.com/jm3s4/agentrc/actions/workflows/ci.yaml/badge.svg)](https://github.com/jm3s4/agentrc/actions/workflows/ci.yaml)
+[![CI](https://github.com/jm3s4/agentrc/actions/workflows/release.yaml/badge.svg)](https://github.com/jm3s4/agentrc/actions/workflows/release.yaml)
 [![JSR](https://jsr.io/badges/@jm3s4/agentrc)](https://jsr.io/@jm3s4/agentrc)
 
-A small TypeScript library for parsing, validating, and loading agent definitions (`AGENT.md`), skills (`SKILL.md`), and declarative HTTP tools.
+TypeScript library for parsing, validating, and loading agent definitions (`AGENT.md`), skills (`SKILL.md`), and declarative tools.
 
-Inference and tool loops stay in the consuming application. `@jm3s4/agentrc` provides `Agent`, `Tool`, `Skill`, and a `FileSystem` interface so definitions can load from Markdown files, in memory maps, or SQL rows.
+`@jm3s4/agentrc` uses Web APIs only. Local disk helpers live in `@jm3s4/agentrc/node`.
 
 ## Installation
 
 ```sh
-# pnpm
 pnpm dlx jsr add @jm3s4/agentrc
-
-# npm
-npx jsr add @jm3s4/agentrc
-
-# bun
-bunx jsr add @jm3s4/agentrc
-
-# deno
-deno add jsr:@jm3s4/agentrc
+# or: npx jsr add @jm3s4/agentrc | bunx jsr add @jm3s4/agentrc | deno add jsr:@jm3s4/agentrc
 ```
 
-`@jm3s4/agentrc` uses Web APIs only. Local filesystem helpers live in `@jm3s4/agentrc/node`.
+## Agents
 
-## 1. Agents
-
-An `AGENT.md` document has YAML frontmatter for configuration and a Markdown body for system instructions.
+An `Agent` parses `AGENT.md` frontmatter and Markdown instructions, or accepts a plain object directly:
 
 ```ts
 import { Agent } from "@jm3s4/agentrc";
 
-const agent = new Agent(`---
+const fromMarkdown = new Agent(`---
 name: support-bot
 version: 1.0.0
 locale:
@@ -42,37 +32,25 @@ model:
   id: gpt-4o
   temperature: 0.2
 ---
-You are a helpful customer support assistant.
+You are a concise customer support assistant.
 `);
 
-console.log(agent.name); // "support-bot"
-console.log(agent.model.id); // "gpt-4o"
-
-const instructions = agent.buildInstructions();
-console.log(instructions.toString());
-```
-
-`new Agent(...)` validates the manifest with Valibot and any inline tool JSON Schemas with Ajv, throwing `ParseError` or `ValidationError` on invalid input.
-
-An `Agent` can also be constructed from plain objects and round trips with `agent.toJSON()` and `agent.toString()`:
-
-```ts
-const agent = new Agent({
+const fromObject = new Agent({
     name: "support-bot",
     version: "1.0.0",
     model: { id: "gpt-4o" },
     instructions: "You are a concise customer support assistant.",
 });
 
-const copy = new Agent(agent.toJSON());
-const markdown = agent.toString();
+const copy = new Agent(fromObject.toJSON());
+const markdown = fromObject.toString();
 ```
 
-> `model` accepts unrecognized properties, and `metadata` holds arbitrary key/value pairs. Other manifest objects reject unknown keys.
+`model` accepts extra provider fields, and `metadata` holds arbitrary key/value pairs. Other manifest objects reject unknown keys.
 
-## 2. System instructions
+## System instructions
 
-`agent.buildInstructions()` separates stable instructions from dynamic runtime context:
+`agent.buildInstructions()` splits stable instructions from runtime variables and localized date context:
 
 ```ts
 const built = agent.buildInstructions({
@@ -80,16 +58,18 @@ const built = agent.buildInstructions({
     additionalInstructions: "Keep answers under 3 sentences.",
 });
 
-built.staticInstructions; // Agent body and <available_skills> catalog
-built.dynamicInstructions; // Sorted runtime variables, localized date, and extra instructions
+built.staticInstructions; // Agent body + <available_skills> catalog
+built.dynamicInstructions; // Runtime variables + date for agent.locale + extra rules
 built.toString(); // staticInstructions + dynamicInstructions joined
 ```
 
-## 3. Tools
+This is done to optimize token caching.
 
-`Tool` wraps a validated `inputSchema` (checked with Ajv before execution) with either a TypeScript handler or a declarative HTTP request.
+## Tools
 
-### TypeScript handlers
+`Tool` validates `inputSchema` on creation and checks arguments with Ajv before running.
+
+### Programmatic handlers
 
 ```ts
 import { Tool } from "@jm3s4/agentrc";
@@ -111,17 +91,17 @@ const weather = new Tool(
     },
 );
 
-const output = await weather.execute({ city: "Bogota" });
+await weather.execute({ city: "Bogota" });
 ```
 
 ### HTTP tools
 
-`Tool` also executes declarative REST definitions. `{{param}}` interpolates arguments (URL encoded in `url`, unencoded in `headers` and `body`), and `{{secret.NAME}}` resolves secrets supplied at runtime.
+`{{param}}` interpolates call arguments (URL encoded in `url`, raw in `headers` and `body`), and `{{secret.NAME}}` resolves runtime secrets:
 
 ```ts
 import { Tool } from "@jm3s4/agentrc";
 
-const lookupAccount = new Tool(
+const lookup = new Tool(
     `
 name: lookup-account
 description: Looks up customer account status by email address.
@@ -146,18 +126,14 @@ execution:
     },
 );
 
-const account = await lookupAccount.execute({ email: "ada@example.com" });
+await lookup.execute({ email: "ada@example.com" });
 ```
 
-`.configure()` returns a new `Tool` (and `agent.configure()` returns a new `Agent`) with bound secrets, SSRF rules, or a custom `fetch` implementation without mutating the original instance.
+HTTP dispatch rejects protocols other than HTTP/HTTPS, disables redirects (`redirect: 'error'`), and blocks loopback, private subnets, cloud metadata (`169.254/16`, `fe80::/10`), CGNAT, and reserved IP ranges via `ipaddr.js`. Enable internal targets with `allowLoopback: true` or `allowPrivateIps: true`. Checks inspect the literal hostname before DNS; pass a custom `fetch` via `.configure({ fetch })` for DNS pinning or egress proxies.
 
-HTTP execution rejects protocols other than HTTP and HTTPS, disables redirects (`redirect: 'error'`), and blocks loopback, private subnets, cloud metadata (`169.254/16`, `fe80::/10`), CGNAT, and reserved IP ranges via `ipaddr.js`. Loopback and private ranges can be enabled with `allowLoopback: true` or `allowPrivateIps: true`.
+## Skills
 
-> URL checks inspect the literal hostname before DNS resolution. Custom DNS pinning or egress proxies can be wired through `.configure({ fetch })`.
-
-## 4. Skills
-
-`Skill` implements `SKILL.md` frontmatter validation, XML catalog formatting, and lazy resource reads.
+`Skill` validates `SKILL.md` frontmatter, formats `<available_skills>` XML catalogs, and reads `references/`, `assets/`, and `scripts/` lazily while blocking traversal paths (`..`, `/`, drive letters):
 
 ```ts
 import { MemoryFileSystem, Skill } from "@jm3s4/agentrc";
@@ -167,41 +143,34 @@ const files = new MemoryFileSystem({
 name: triage
 description: Classify incoming support tickets by urgency.
 ---
-Always check billing outages before routing to tier 1 support.
+Check billing outages before routing to tier 1 support.
 `,
     "references/matrix.md": "# Priority Matrix\nP1: Service down",
 });
 
 const skill = await Skill.load(files);
 const resources = await skill.listResources();
-const matrix = await skill.getResource("references/matrix.md");
-
-console.log(skill.name); // "triage"
-console.log(resources[0]?.path); // "references/matrix.md"
-console.log(await matrix.text()); // "# Priority Matrix\nP1: Service down"
+const matrix = await (await skill.getResource("references/matrix.md")).text();
 ```
 
-Paths containing `..`, leading slashes, or drive letters are rejected with `ParseError` before calling `files.read()`.
+## Loading bundles
 
-## 5. Loading bundles
-
-When `AGENT.md` references standalone tool files and skill directories:
+When an `AGENT.md` directory references external tools and skills:
 
 ```text
 support-bot/
 ├── AGENT.md
-├── tools/
-│   └── lookup-account.yaml
-└── skills/
-    └── triage/
-        ├── SKILL.md
-        └── references/
-            └── matrix.md
+├── tools/lookup-account.yaml
+└── skills/triage/
+    ├── SKILL.md
+    └── references/matrix.md
 ```
 
-`Agent.load(files)` and `Skill.load(files)` read from any `FileSystem` implementing `{ read, list }`.
+`Agent.load(files)` and `Skill.load(files)` work over any `FileSystem` implementing `{ read, list }`.
 
 ### Local disk (`@jm3s4/agentrc/node`)
+
+`NodeFileSystem` resolves symlinks via `realpath` on reads and listings to prevent escapes outside the root directory:
 
 ```ts
 import { Agent, Skill } from "@jm3s4/agentrc";
@@ -212,33 +181,28 @@ const agent = await Agent.load(new NodeFileSystem("./agents/support-bot"), {
     security: { allowedHosts: ["api.example.com"] },
 });
 
-const built = agent.buildInstructions(); // Includes agent.skills catalog
-const toolResult = await agent.getTool("lookup-account")?.execute({ email: "ada@example.com" });
-
 const summaries = await Skill.discover(new NodeFileSystem("./skills"));
 ```
 
-`NodeFileSystem` checks `realpath` on reads and listings to block symlink escapes outside the root directory.
-
-### In memory (`MemoryFileSystem`)
+### In memory
 
 ```ts
 import { Agent, MemoryFileSystem } from "@jm3s4/agentrc";
 
-const files = new MemoryFileSystem({
-    "AGENT.md": agentMd,
-    "tools/lookup-account.yaml": toolYaml,
-    "skills/triage/SKILL.md": skillMd,
-    "skills/triage/references/matrix.md": "# Matrix",
-});
+const base = await Agent.load(
+    new MemoryFileSystem({
+        "AGENT.md": agentMd,
+        "tools/lookup-account.yaml": toolYaml,
+        "skills/triage/SKILL.md": skillMd,
+        "skills/triage/references/matrix.md": "# Matrix",
+    }),
+);
 
-const agent = await Agent.load(files);
-const requestAgent = agent.configure({ secrets: tenantSecrets });
+// Bind per tenant or per request without mutating `base`
+const tenantAgent = base.configure({ secrets: tenantSecrets });
 ```
 
 ### SQL and object storage
-
-`Agent`, `Tool`, and `Skill` can be constructed from SQL rows together with a `{ read, list }` `FileSystem` object:
 
 ```ts
 import { Agent, type FileSystem, Skill, Tool } from "@jm3s4/agentrc";
@@ -249,10 +213,8 @@ function createSkillFiles(skillId: string): FileSystem {
         list: async (prefix = "") => {
             const pattern = prefix ? `${prefix}/%` : "%";
             const rows = await sql<{ path: string }[]>`
-                select path
-                from skill_files
-                where skill_id = ${skillId}
-                  and path like ${pattern}
+                select path from skill_files
+                where skill_id = ${skillId} and path like ${pattern}
             `;
             return rows.map((row) => row.path);
         },
@@ -261,20 +223,12 @@ function createSkillFiles(skillId: string): FileSystem {
 
 const agentRow = await sql.one`
     select id, manifest, instructions
-    from agents
-    where slug = ${slug} and tenant_id = ${tenantId}
+    from agents where slug = ${slug} and tenant_id = ${tenantId}
 `;
-
-const toolRows = await sql`
-    select definition
-    from tools
-    where agent_id = ${agentRow.id}
-`;
-
+const toolRows = await sql`select definition from tools where agent_id = ${agentRow.id}`;
 const skillRows = await sql`
     select id, name, description, instructions, metadata
-    from skills
-    where agent_id = ${agentRow.id}
+    from skills where agent_id = ${agentRow.id}
 `;
 
 const agent = new Agent(
@@ -299,17 +253,13 @@ const agent = new Agent(
 );
 ```
 
-## 6. AI SDK integration
-
-Wiring an `Agent` into Vercel AI SDK (`ToolLoopAgent`):
+## AI SDK integration
 
 ```ts
 import { HttpError, ParseError, ValidationError } from "@jm3s4/agentrc";
 import { dynamicTool, isStepCount, jsonSchema, ToolLoopAgent } from "ai";
 
-const built = agent.buildInstructions({
-    variables: { tenantId: "clinic-12" },
-});
+const built = agent.buildInstructions({ variables: { tenantId: "clinic-12" } });
 
 const tools = Object.fromEntries(
     agent.tools.map((t) => [
@@ -344,30 +294,29 @@ const runner = new ToolLoopAgent({
 
 ## Errors
 
-- **`ParseError`**: malformed frontmatter, YAML, or JSON, missing template arguments or secrets, SSRF rejections, missing files, or path traversal.
-- **`ValidationError`**: schema failures on manifests, skills, tools, or `Tool.execute()` arguments, with `.issues` (`readonly { path: string; message: string }[]`).
-- **`HttpError`**: transport failures (`status: 502`), timeouts (`status: 504`), or error responses (`status: response.status`) from HTTP tools.
+- **`ParseError`**: malformed frontmatter/YAML/JSON, missing template args or secrets, SSRF violations, missing files, or path traversal.
+- **`ValidationError`**: schema failures on manifests, skills, tools, or `Tool.execute()` arguments (`.issues`).
+- **`HttpError`**: transport failures (`502`), timeouts (`504`), or error responses (`response.status`) from HTTP tools.
 
 ## Contributing
 
-Requires Node.js 26+ and pnpm.
+Requires Node.js 26+ and pnpm. `node:*` imports are restricted to `lib/node/` and enforced by `pnpm nodecheck`.
 
 ```sh
 pnpm install
-pnpm check       # typecheck, lint, format check, tests, and node import check
+pnpm check       # typecheck, lint, format check, test, nodecheck
 ```
 
-Individual scripts:
+## Releases
+
+Versions follow SemVer (`0.x.y`). `pnpm version` updates `package.json`, syncs `jsr.json`, commits, and tags `vX.Y.Z`:
 
 ```sh
-pnpm typecheck   # tsc --noEmit
-pnpm lint        # oxlint --type-aware .
-pnpm fmt         # format with oxfmt
-pnpm test        # vitest run
-pnpm nodecheck   # verify no node:* imports exist outside lib/node/
+pnpm version minor
+git push --follow-tags
 ```
 
-`node:*` imports are restricted to `lib/node/` and verified in CI by `pnpm nodecheck`.
+Pushing a `v*` tag triggers `.github/workflows/release.yaml` to validate manifests, run `pnpm check`, publish to JSR, and create a GitHub release (tags with `-` are marked as prereleases).
 
 ## License
 

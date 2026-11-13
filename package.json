@@ -1,6 +1,6 @@
 {
   "name": "@jm3s4/agentrc",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "exports": {
     ".": "./lib/index.ts",

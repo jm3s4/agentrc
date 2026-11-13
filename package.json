@@ -1,9 +1,11 @@
 {
-  "name": "agent",
-  "private": true,
-  "workspaces": [
-    "./packages/*"
-  ],
+  "name": "@ekisa/agent",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.ts",
+    "./node": "./lib/node/index.ts"
+  },
   "scripts": {
     "typecheck": "bun check",
     "nodecheck": "bash scripts/check-node-imports.sh",
@@ -17,6 +19,12 @@
     "taze:major": "taze major -wIr",
     "publish": "",
     "prepublishOnly": "bun run typecheck && bun run lint && bun run test && bun run nodecheck"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ipaddr.js": "^2.5.0",
+    "valibot": "^1.5.0",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

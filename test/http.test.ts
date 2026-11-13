@@ -101,12 +101,12 @@ describe('executeHttp - requests and errors', () => {
         const result = await executeHttp(
             exec('https://api.example.com/items?q={{q}}', {
                 method: 'POST',
-                headers: { Authorization: 'Bearer {{secret.KEY}}' },
+                headers: { Authorization: 'Bearer {{env.KEY}}' },
                 body: { id: '{{id}}', active: true },
             }),
             'book',
             { q: 'a b', id: 7 },
-            { secrets: { KEY: 'sec' }, fetch: mock },
+            { env: { KEY: 'sec' }, fetch: mock },
         );
 
         expect(capturedUrl).toBe('https://api.example.com/items?q=a%20b');

@@ -96,7 +96,7 @@ await weather.execute({ city: "Bogota" });
 
 ### HTTP tools
 
-`{{param}}` interpolates call arguments (URL encoded in `url`, raw in `headers` and `body`), and `{{secret.NAME}}` resolves runtime secrets:
+`{{param}}` interpolates call arguments (URL encoded in `url`, raw in `headers` and `body`), and `{{env.NAME}}` resolves runtime environment variables:
 
 ```ts
 import { Tool } from "@jm3s4/agentrc";
@@ -117,11 +117,11 @@ execution:
   method: GET
   url: https://api.example.com/accounts?email={{email}}
   headers:
-    Authorization: Bearer {{secret.API_KEY}}
+    Authorization: Bearer {{env.API_KEY}}
   timeoutMs: 5000
 `,
     {
-        secrets: { API_KEY: process.env.API_KEY! },
+        env: { API_KEY: process.env.API_KEY! },
         security: { allowedHosts: ["api.example.com"] },
     },
 );
@@ -177,7 +177,7 @@ import { Agent, Skill } from "@jm3s4/agentrc";
 import { NodeFileSystem } from "@jm3s4/agentrc/node";
 
 const agent = await Agent.load(new NodeFileSystem("./agents/support-bot"), {
-    secrets: { API_KEY: process.env.API_KEY! },
+    env: { API_KEY: process.env.API_KEY! },
     security: { allowedHosts: ["api.example.com"] },
 });
 
@@ -199,7 +199,7 @@ const base = await Agent.load(
 );
 
 // Bind per tenant or per request without mutating `base`
-const tenantAgent = base.configure({ secrets: tenantSecrets });
+const tenantAgent = base.configure({ env: tenantEnv });
 ```
 
 ### SQL and object storage
@@ -247,7 +247,7 @@ const agent = new Agent(
                     { files: createSkillFiles(row.id) },
                 ),
         ),
-        secrets: tenantSecrets,
+        env: tenantEnv,
         security: { allowedHosts: ["api.example.com"] },
     },
 );
@@ -294,7 +294,7 @@ const runner = new ToolLoopAgent({
 
 ## Errors
 
-- **`ParseError`**: malformed frontmatter/YAML/JSON, missing template args or secrets, SSRF violations, missing files, or path traversal.
+- **`ParseError`**: malformed frontmatter/YAML/JSON, missing template args or env, SSRF violations, missing files, or path traversal.
 - **`ValidationError`**: schema failures on manifests, skills, tools, or `Tool.execute()` arguments (`.issues`).
 - **`HttpError`**: transport failures (`502`), timeouts (`504`), or error responses (`response.status`) from HTTP tools.
 

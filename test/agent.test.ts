@@ -71,15 +71,15 @@ execution:
   method: GET
   url: https://api.example.com/me
   headers:
-    Authorization: Bearer {{secret.API_KEY}}
+    Authorization: Bearer {{env.API_KEY}}
 `,
             'skills/triage/SKILL.md': '---\nname: triage\ndescription: Triage tickets.\n---\nStep 1',
             'skills/triage/references/rules.md': 'Rule A',
         });
 
         const base = await Agent.load(fs, { fetch: mockFetch });
-        const tenantA = base.configure({ secrets: { API_KEY: 'key-a' } });
-        const tenantB = base.configure({ secrets: { API_KEY: 'key-b' } });
+        const tenantA = base.configure({ env: { API_KEY: 'key-a' } });
+        const tenantB = base.configure({ env: { API_KEY: 'key-b' } });
 
         await expect(base.getTool('lookup')!.execute({})).rejects.toThrow(ParseError);
         expect(await tenantA.getTool('lookup')!.execute({})).toEqual({ auth: 'Bearer key-a' });

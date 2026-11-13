@@ -15,7 +15,7 @@ export interface HttpSecurityOptions {
 
 /** Request-scoped dependencies and policy overrides for `executeHttp`. */
 export interface HttpDispatchOptions {
-    readonly secrets?: Readonly<Record<string, string>>;
+    readonly env?: Readonly<Record<string, string>>;
     readonly security?: HttpSecurityOptions;
     readonly fetch?: typeof fetch;
     readonly signal?: AbortSignal;
@@ -124,19 +124,19 @@ export async function executeHttp(
     args: Readonly<Record<string, unknown>>,
     options: HttpDispatchOptions = {},
 ): Promise<unknown> {
-    const { secrets = {}, security, fetch: customFetch = globalThis.fetch, signal } = options;
+    const { env = {}, security, fetch: customFetch = globalThis.fetch, signal } = options;
 
-    const resolvedUrl = resolveTemplate(exec.url, { args, secrets, encodeUrl: true });
+    const resolvedUrl = resolveTemplate(exec.url, { args, env, encodeUrl: true });
     const targetUrl = assertSafeUrl(resolvedUrl, security);
 
     const headers = new Headers();
     if (exec.headers) {
-        for (const [key, value] of Object.entries(resolveTemplateRecord(exec.headers, { args, secrets }))) {
+        for (const [key, value] of Object.entries(resolveTemplateRecord(exec.headers, { args, env }))) {
             headers.set(key, value);
         }
     }
 
-    const body = resolveBody(exec.body, { args, secrets });
+    const body = resolveBody(exec.body, { args, env });
 
     const signals = [signal, exec.timeoutMs ? AbortSignal.timeout(exec.timeoutMs) : undefined].filter(
         (s) => s !== undefined,

@@ -14,8 +14,8 @@ import {
  * Runtime options passed when calling {@link Tool.execute} or binding defaults via {@link Tool.configure}.
  */
 export interface ToolExecutionOptions {
-    /** Secret dictionary used to resolve `{{secret.NAME}}` placeholders. */
-    readonly secrets?: Readonly<Record<string, string>>;
+    /** Environment dictionary used to resolve `{{env.NAME}}` placeholders. */
+    readonly env?: Readonly<Record<string, string>>;
     /** SSRF policy applied before dispatching HTTP requests. */
     readonly security?: HttpSecurityOptions;
     /** Custom `fetch` implementation (useful for proxies, DNS pinning, or tests). */
@@ -61,7 +61,7 @@ function mergeExecutionOptions(
     return {
         fetch: override.fetch ?? base.fetch,
         validate: override.validate ?? base.validate,
-        secrets: base.secrets || override.secrets ? { ...base.secrets, ...override.secrets } : undefined,
+        env: base.env || override.env ? { ...base.env, ...override.env } : undefined,
         security: base.security || override.security ? { ...base.security, ...override.security } : undefined,
     };
 }
@@ -73,7 +73,7 @@ function mergeExecutionOptions(
  * @example
  * ```ts
  * const lookup = new Tool(yamlSource, {
- *     secrets: { API_KEY: process.env.API_KEY! },
+ *     env: { API_KEY: process.env.API_KEY! },
  *     security: { allowedHosts: ['api.example.com'] },
  * });
  *
@@ -112,7 +112,7 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
         this.#definition = definition;
         this.#handler = options.handler;
         this.#defaults = {
-            secrets: options.secrets,
+            env: options.env,
             security: options.security,
             fetch: options.fetch,
             validate: options.validate,
@@ -141,7 +141,7 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
     }
 
     /**
-     * Returns a new `Tool` with pre-bound secrets, SSRF rules, or `fetch` implementation.
+     * Returns a new `Tool` with pre-bound env, SSRF rules, or `fetch` implementation.
      * Does not mutate the original instance.
      */
     configure(defaults: Omit<ToolExecutionOptions, 'signal'>): Tool<TArgs, TResult> {
@@ -157,7 +157,7 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
      * the bound handler or the declarative HTTP contract.
      *
      * @throws {@link ValidationError} If `args` fail `inputSchema` validation.
-     * @throws {@link ParseError} If templates/secrets are missing, URL fails SSRF checks, or the tool has no executor.
+     * @throws {@link ParseError} If templates/env are missing, URL fails SSRF checks, or the tool has no executor.
      * @throws {@link HttpError} If the HTTP request fails, times out, or returns a non-2xx status.
      */
     async execute(args: TArgs = {} as TArgs, options: ToolExecutionOptions = {}): Promise<TResult> {

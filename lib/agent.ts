@@ -37,8 +37,8 @@ export interface AgentOptions {
     readonly tools?: readonly Tool[];
     /** Skills bound to the agent (overrides matching names from `manifest.skills`, or populates `agent.skills`). */
     readonly skills?: readonly Skill[];
-    /** Default HTTP secrets pre-bound onto every tool attached to this agent. */
-    readonly secrets?: Readonly<Record<string, string>>;
+    /** Default HTTP env variables pre-bound onto every tool attached to this agent. */
+    readonly env?: Readonly<Record<string, string>>;
     /** Default SSRF security policy pre-bound onto every HTTP tool attached to this agent. */
     readonly security?: HttpSecurityOptions;
     /** Custom `fetch` implementation pre-bound onto every HTTP tool attached to this agent. */
@@ -278,12 +278,11 @@ export class Agent {
         }
         this.skills = [...this.#skillMap.values()];
 
-        const hasDefaults =
-            options.secrets !== undefined || options.security !== undefined || options.fetch !== undefined;
+        const hasDefaults = options.env !== undefined || options.security !== undefined || options.fetch !== undefined;
         const bindDefaults = (tool: Tool): Tool =>
             hasDefaults
                 ? tool.configure({
-                      secrets: options.secrets,
+                      env: options.env,
                       security: options.security,
                       fetch: options.fetch,
                   })
@@ -352,7 +351,7 @@ export class Agent {
     }
 
     /**
-     * Returns a new `Agent` with per-request or per-tenant secrets, SSRF rules, or `fetch`
+     * Returns a new `Agent` with per-request or per-tenant env, SSRF rules, or `fetch`
      * applied across all attached tools without mutating the original instance.
      */
     configure(defaults: Omit<ToolExecutionOptions, 'signal'>): Agent {

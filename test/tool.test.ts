@@ -16,7 +16,7 @@ execution:
   method: GET
   url: https://api.example.com/accounts?email={{email}}
   headers:
-    Authorization: Bearer {{secret.API_KEY}}
+    Authorization: Bearer {{env.API_KEY}}
 `;
 
 describe('Tool', () => {
@@ -76,7 +76,7 @@ describe('Tool', () => {
             )) as unknown as typeof fetch;
 
         const base = new Tool(lookupYaml, { fetch: mockFetch });
-        const bound = base.configure({ secrets: { API_KEY: 'secret-1' } });
+        const bound = base.configure({ env: { API_KEY: 'secret-1' } });
 
         await expect(base.execute({ email: 'a@b.com' })).rejects.toThrow(ParseError);
         expect(await bound.execute({ email: 'a@b.com' })).toEqual({ auth: 'Bearer secret-1' });

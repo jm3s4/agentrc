@@ -1,36 +1,29 @@
-import { describe, expect, it } from 'vitest';
-import { ParseError, parseFrontmatter } from '../lib/index.ts';
+import { describe, expect, test } from 'vitest';
+import { ParseError } from '../lib/errors.ts';
+import { parseFrontmatter } from '../lib/frontmatter.ts';
 
 describe('parseFrontmatter', () => {
-    it('parses frontmatter and body', () => {
-        const result = parseFrontmatter('---\ntitle: Hello\n---\nDocument body');
+    test('splits valid frontmatter and body while preserving horizontal rules', () => {
+        const [fm, body] = parseFrontmatter('\uFEFF---\r\nname: test\r\n---\r\nHello\r\n\r\n---\r\n\r\nWorld');
 
-        expect(result).toEqual(['title: Hello', 'Document body']);
+        expect(fm).toBe('name: test');
+        expect(body).toBe('Hello\r\n\r\n---\r\n\r\nWorld');
     });
 
-    it('handles empty frontmatter and body', () => {
+    test('handles empty frontmatter and body', () => {
         expect(parseFrontmatter('---\n---\n')).toEqual(['', '']);
     });
 
-    it('strips UTF-8 BOM', () => {
-        expect(parseFrontmatter('\uFEFF---\ntitle: Hello\n---\nBody')).toEqual(['title: Hello', 'Body']);
+    test('ignores --- inside frontmatter scalars when not a closing delimiter line', () => {
+        const [fm, body] = parseFrontmatter('---\ntitle: "---not-closing"\n---\nBody');
+        expect(fm).toBe('title: "---not-closing"');
+        expect(body).toBe('Body');
     });
 
-    it('trims frontmatter and body whitespace', () => {
-        expect(parseFrontmatter('---\n  title: Hello  \n---\n  Body  ')).toEqual(['title: Hello', 'Body']);
-    });
-
-    it('throws when frontmatter is missing', () => {
-        expect(() => parseFrontmatter('Document body')).toThrow(ParseError);
-    });
-
-    it('throws when frontmatter is not closed', () => {
-        expect(() => parseFrontmatter('---\ntitle: Hello')).toThrow(ParseError);
-    });
-
-    it('includes filename in error messages', () => {
-        expect(() => parseFrontmatter('Invalid content', 'README.md')).toThrow(
-            'README.md must start with YAML frontmatter',
-        );
-    });
+    test.each(['Body only', '---garbage\nname: x\n---\nBody', '---\nname: unclosed'])(
+        'rejects malformed delimiters %p',
+        (input) => {
+            expect(() => parseFrontmatter(input, 'AGENT.md')).toThrow(ParseError);
+        },
+    );
 });

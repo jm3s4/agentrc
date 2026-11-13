@@ -1,13 +1,13 @@
 import { Ajv } from 'ajv';
 import * as v from 'valibot';
-import { SkillNameSchema } from '../skills/schema.ts';
 
-const ajv = new Ajv({ strict: false });
+export const ajv = new Ajv({ strict: false });
+
+export type JsonSchemaValidator = ReturnType<Ajv['compile']>;
 
 /**
- * Validates that an object is a syntactically valid JSON Schema.
- * Rejects malformed schemas at manifest-parse time, so downstream
- * model adapters never see garbage.
+ * Validates that a value is an object JSON Schema accepted by Ajv.
+ * Rejects boolean root schemas and malformed definitions at parse time.
  */
 export const JsonSchemaSchema = v.pipe(
     v.unknown(),
@@ -42,7 +42,42 @@ const SemverSchema = v.pipe(
 const KebabNameSchema = (label: string) =>
     v.pipe(v.string(), v.regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, `${label} must be kebab-case`));
 
-// Skill definitions
+function isValidTimeZone(timeZone: string): boolean {
+    try {
+        Intl.DateTimeFormat(undefined, { timeZone });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+// Skills
+
+export const SkillNameSchema = v.pipe(
+    v.string(),
+    v.regex(
+        /^[a-z0-9]+(-[a-z0-9]+)*$/,
+        "Skill name must be 1-64 lowercase alphanumeric chars and hyphens (e.g. 'appointment-management')",
+    ),
+    v.maxLength(64, 'Skill name must not exceed 64 characters'),
+);
+
+export const SkillMetadataSchema = v.looseObject({
+    name: SkillNameSchema,
+    description: v.pipe(
+        v.string(),
+        v.minLength(1, 'Skill description is required'),
+        v.maxLength(1024, 'Skill description must not exceed 1024 characters'),
+    ),
+    license: v.optional(v.pipe(v.string(), v.minLength(1))),
+    compatibility: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    'allowed-tools': v.optional(v.pipe(v.string(), v.minLength(1))),
+    metadata: v.optional(v.record(v.string(), v.string()), () => ({})),
+});
+
+export type SkillMetadata = v.InferOutput<typeof SkillMetadataSchema>;
+
+export type SkillMetadataInput = v.InferInput<typeof SkillMetadataSchema>;
 
 export const SkillRefSchema = v.union([
     v.string(),
@@ -52,7 +87,9 @@ export const SkillRefSchema = v.union([
     }),
 ]);
 
-// Tool definitions
+export type SkillRef = v.InferOutput<typeof SkillRefSchema>;
+
+// Tools
 
 export const HttpExecutionSchema = v.strictObject({
     type: v.literal('http'),
@@ -70,11 +107,10 @@ export const ToolSchema = v.strictObject({
     displayName: v.optional(v.pipe(v.string(), v.minLength(1))),
     description: v.pipe(v.string(), v.minLength(10, 'Tool description must be at least 10 characters')),
     inputSchema: JsonSchemaSchema,
-    outputSchema: v.optional(JsonSchemaSchema),
     execution: v.optional(HttpExecutionSchema),
 });
 
-export type Tool = v.InferOutput<typeof ToolSchema>;
+export type ToolDefinition = v.InferOutput<typeof ToolSchema>;
 
 export type ToolInput = v.InferInput<typeof ToolSchema>;
 
@@ -82,7 +118,7 @@ export const ToolRefSchema = v.union([v.string(), ToolSchema]);
 
 export type ToolRef = v.InferOutput<typeof ToolRefSchema>;
 
-// Model and runtime
+// Model, runtime, locale, suggestions, capabilities
 
 export const ModelSchema = v.looseObject({
     id: v.pipe(v.string(), v.minLength(1, 'Model id is required')),
@@ -93,7 +129,7 @@ export const ModelSchema = v.looseObject({
     presencePenalty: v.optional(v.pipe(v.number(), v.minValue(-2), v.maxValue(2))),
     stopSequences: v.optional(v.array(v.string())),
     seed: v.optional(v.pipe(v.number(), v.integer())),
-    reasoningEffort: v.optional(v.picklist(['none', 'minimal', 'low', 'medium', 'high'])),
+    reasoningEffort: v.optional(v.picklist(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])),
     maxTokens: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 });
 
@@ -106,8 +142,6 @@ export const RuntimeSchema = v.strictObject({
 
 export type Runtime = v.InferOutput<typeof RuntimeSchema>;
 
-// Locale
-
 export const LocaleSchema = v.strictObject({
     language: v.optional(
         v.pipe(v.string(), v.regex(/^[a-z]{2}(-[A-Z]{2})?$/, "Language must be an ISO 639 tag (e.g. 'es' or 'es-CO')")),
@@ -117,22 +151,13 @@ export const LocaleSchema = v.strictObject({
         v.pipe(
             v.string(),
             v.minLength(1, "Time zone is required (e.g. 'America/Bogota')"),
-            v.check((input) => {
-                try {
-                    Intl.DateTimeFormat(undefined, { timeZone: input });
-                    return true;
-                } catch {
-                    return false;
-                }
-            }, "Time zone must be a valid IANA identifier (e.g. 'America/Bogota', 'UTC')"),
+            v.check(isValidTimeZone, "Time zone must be a valid IANA identifier (e.g. 'America/Bogota', 'UTC')"),
         ),
         'UTC',
     ),
 });
 
 export type Locale = v.InferOutput<typeof LocaleSchema>;
-
-// Suggestions
 
 export const PromptSuggestionSchema = v.strictObject({
     label: v.pipe(v.string(), v.minLength(1)),
@@ -155,8 +180,6 @@ export const SuggestionSchema = v.variant('type', [
 
 export type Suggestion = v.InferOutput<typeof SuggestionSchema>;
 
-// Capabilities
-
 export const KnowledgeCapabilitySchema = v.strictObject({
     sources: v.pipe(v.array(v.string()), v.minLength(1, 'At least one knowledge source is required')),
 });
@@ -169,41 +192,25 @@ export const CapabilitiesSchema = v.strictObject({
 
 export type Capabilities = v.InferOutput<typeof CapabilitiesSchema>;
 
-// Metadata
+// Agent manifest (flat)
 
-export const AgentMetadataSchema = v.looseObject({
-    name: KebabNameSchema('Manifest name'),
+export const AgentSchema = v.strictObject({
+    name: KebabNameSchema('Agent name'),
     version: SemverSchema,
     displayName: v.optional(v.pipe(v.string(), v.minLength(1))),
     description: v.optional(v.pipe(v.string(), v.minLength(1))),
     icon: v.optional(v.string()),
     tags: v.optional(v.array(v.string()), () => []),
     suggestions: v.optional(v.array(SuggestionSchema), () => []),
-    annotations: v.optional(v.record(v.string(), v.unknown()), () => ({})),
-});
-
-export type AgentMetadata = v.InferOutput<typeof AgentMetadataSchema>;
-
-// Spec and root
-
-export const AgentSpecSchema = v.strictObject({
     locale: v.optional(LocaleSchema, () => v.parse(LocaleSchema, {})),
     model: ModelSchema,
     runtime: v.optional(RuntimeSchema, () => v.parse(RuntimeSchema, {})),
     capabilities: v.optional(CapabilitiesSchema),
     skills: v.optional(v.array(SkillRefSchema), () => []),
     tools: v.optional(v.array(ToolRefSchema), () => []),
+    metadata: v.optional(v.record(v.string(), v.unknown()), () => ({})),
 });
 
-export type AgentSpec = v.InferOutput<typeof AgentSpecSchema>;
+export type AgentManifest = v.InferOutput<typeof AgentSchema>;
 
-export const AgentSchema = v.strictObject({
-    apiVersion: v.literal('agent.ekisa.com.co/v1'),
-    kind: v.literal('Agent'),
-    metadata: AgentMetadataSchema,
-    spec: AgentSpecSchema,
-});
-
-export type Agent = v.InferOutput<typeof AgentSchema>;
-
-export type AgentInput = v.InferInput<typeof AgentSchema>;
+export type AgentManifestInput = v.InferInput<typeof AgentSchema>;

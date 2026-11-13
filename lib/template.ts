@@ -1,15 +1,13 @@
-import { ParseError } from '../errors.ts';
+import { ParseError } from './errors.ts';
 
-/** Context passed to template resolution functions. */
+/** Inputs available to template interpolation: tool arguments, optional secrets, and URL-encoding behavior. */
 export interface TemplateContext {
-    /** Argument parameters supplied by the model or caller. */
     readonly args: Readonly<Record<string, unknown>>;
-    /** Secret mapping for resolving `{{secret.NAME}}` placeholders. */
     readonly secrets?: Readonly<Record<string, string>>;
-    /** Whether parameter values should be URL-encoded (for URL templates). */
     readonly encodeUrl?: boolean;
 }
 
+/** Converts a resolved argument value to its string form, throwing on unsupported types. */
 function stringifyArg(value: unknown): string {
     if (typeof value === 'string') {
         return value;
@@ -24,17 +22,7 @@ function stringifyArg(value: unknown): string {
 }
 
 /**
- * Resolves `{{name}}` and `{{secret.NAME}}` placeholders in a template string.
- *
- * Rules:
- * - A `{{name}}` missing from `args` throws {@link ParseError}.
- * - A `{{secret.NAME}}` missing from `secrets` throws {@link ParseError}.
- * - When `encodeUrl` is `true`, argument values are encoded via `encodeURIComponent`.
- *
- * @param template String containing `{{...}}` expressions.
- * @param context Argument values and secret dictionary.
- * @returns Fully interpolated string.
- * @throws {ParseError} If a parameter or secret is missing.
+ * Interpolates `{{name}}` and `{{secret.NAME}}` placeholders.
  */
 export function resolveTemplate(template: string, context: TemplateContext): string {
     const { args, secrets = {}, encodeUrl = false } = context;
@@ -43,14 +31,14 @@ export function resolveTemplate(template: string, context: TemplateContext): str
         const trimmed = expression.trim();
         if (trimmed.startsWith('secret.')) {
             const secretKey = trimmed.slice(7).trim();
-            const secretValue = secrets[secretKey];
+            const secretValue = Object.hasOwn(secrets, secretKey) ? secrets[secretKey] : undefined;
             if (secretValue === undefined) {
                 throw new ParseError(`Required secret '${secretKey}' was not provided`);
             }
             return secretValue;
         }
 
-        const argValue = args[trimmed];
+        const argValue = Object.hasOwn(args, trimmed) ? args[trimmed] : undefined;
         if (argValue === undefined || argValue === null) {
             throw new ParseError(`Required template parameter '${trimmed}' is missing from tool arguments`);
         }
@@ -60,13 +48,7 @@ export function resolveTemplate(template: string, context: TemplateContext): str
     });
 }
 
-/**
- * Resolves all string values inside a key-value record template.
- *
- * @param record Key-value mapping containing templates in values.
- * @param context Template context.
- * @returns Fully interpolated record.
- */
+/** Resolves every value in a string record through `resolveTemplate`, preserving key order. */
 export function resolveTemplateRecord(
     record: Readonly<Record<string, string>>,
     context: TemplateContext,

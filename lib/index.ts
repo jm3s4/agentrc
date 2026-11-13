@@ -1,14 +1,38 @@
-export { ParseError, toSpecIssues, ValidationError } from './errors.ts';
-export type { SpecIssue, ValidationResult } from './errors.ts';
-export * from './frontmatter.ts';
-export * from './native/knowledge.ts';
-export * from './skills/parser.ts';
-export * from './skills/resolver.ts';
-export * from './skills/schema.ts';
-export * from './skills/skill.ts';
-export * from './spec/parser.ts';
-export * from './spec/schema.ts';
-export * from './spec/validator.ts';
-export * from './system-instructions.ts';
-export * from './tools/http.ts';
-export * from './tools/template.ts';
+export {
+    Agent,
+    type AgentData,
+    type AgentInput,
+    type AgentOptions,
+    type BuildInstructionsOptions,
+    type SystemInstructions,
+} from './agent.ts';
+export { HttpError, ParseError, ValidationError, type SpecIssue, type ValidationResult } from './errors.ts';
+export { MemoryFileSystem, type FileSystem } from './filesystem.ts';
+export type { HttpSecurityOptions } from './http.ts';
+export type {
+    AgentManifest,
+    AgentManifestInput,
+    Capabilities,
+    HttpExecution,
+    KnowledgeCapability,
+    Locale,
+    Model,
+    PromptSuggestion,
+    Runtime,
+    SkillMetadata,
+    SkillMetadataInput,
+    SkillRef,
+    Suggestion,
+    ToolDefinition,
+    ToolInput,
+    ToolRef,
+} from './schema.ts';
+export {
+    Skill,
+    type SkillDefinition,
+    type SkillOptions,
+    type SkillResource,
+    type SkillResourceSummary,
+    type SkillSummary,
+} from './skill.ts';
+export { Tool, type ToolExecutionOptions, type ToolHandler, type ToolOptions } from './tool.ts';

@@ -7,6 +7,6 @@
     "./node": "./lib/node/index.ts"
   },
   "publish": {
-    "include": ["lib/**/*.ts", "README.md", "jsr.json"]
+    "include": ["lib/**/*.ts", "README.md", "LICENSE", "jsr.json"]
   }
 }

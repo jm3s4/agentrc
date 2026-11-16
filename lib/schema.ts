@@ -108,6 +108,7 @@ export const ToolSchema = v.strictObject({
     description: v.pipe(v.string(), v.minLength(10, 'Tool description must be at least 10 characters')),
     inputSchema: JsonSchemaSchema,
     execution: v.optional(HttpExecutionSchema),
+    requiresApproval: v.optional(v.boolean()),
 });
 
 export type ToolDefinition = v.InferOutput<typeof ToolSchema>;

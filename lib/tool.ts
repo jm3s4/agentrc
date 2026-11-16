@@ -91,6 +91,8 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
     readonly inputSchema: Record<string, unknown>;
     /** Declarative HTTP contract, when defined in the manifest. */
     readonly execution: HttpExecution | undefined;
+    /** Require explicit human approval before executing this tool. */
+    readonly requiresApproval: boolean;
 
     readonly #definition: ToolDefinition;
     readonly #handler: ToolHandler<TArgs, TResult> | undefined;
@@ -122,6 +124,7 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
         this.description = definition.description;
         this.inputSchema = definition.inputSchema;
         this.execution = definition.execution;
+        this.requiresApproval = definition.requiresApproval ?? false;
     }
 
     /**

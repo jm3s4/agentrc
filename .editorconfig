@@ -12,6 +12,6 @@ max_line_length = 120
 [*.{ts,js,mjs,cjs,tsx,jsx,svelte}]
 quote_type = single
 
-[*.{yml,yaml,json,jsonc}]
+[*.{md,mdx,yml,yaml,json,jsonc}]
 indent_style = space
 indent_size = 2

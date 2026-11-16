@@ -36,10 +36,10 @@ You are a concise customer support assistant.
 `);
 
 const fromObject = new Agent({
-    name: "support-bot",
-    version: "1.0.0",
-    model: { id: "gpt-4o" },
-    instructions: "You are a concise customer support assistant.",
+  name: "support-bot",
+  version: "1.0.0",
+  model: { id: "gpt-4o" },
+  instructions: "You are a concise customer support assistant.",
 });
 
 const copy = new Agent(fromObject.toJSON());
@@ -54,8 +54,8 @@ const markdown = fromObject.toString();
 
 ```ts
 const built = agent.buildInstructions({
-    variables: { tenantId: "clinic-12", channel: "web" },
-    additionalInstructions: "Keep answers under 3 sentences.",
+  variables: { tenantId: "clinic-12", channel: "web" },
+  additionalInstructions: "Keep answers under 3 sentences.",
 });
 
 built.staticInstructions; // Agent body + <available_skills> catalog
@@ -75,20 +75,20 @@ This is done to optimize token caching.
 import { Tool } from "@jm3s4/agentrc";
 
 const weather = new Tool(
-    {
-        name: "get-weather",
-        description: "Get the current weather for a city.",
-        inputSchema: {
-            type: "object",
-            required: ["city"],
-            properties: {
-                city: { type: "string" },
-            },
-        },
+  {
+    name: "get-weather",
+    description: "Get the current weather for a city.",
+    inputSchema: {
+      type: "object",
+      required: ["city"],
+      properties: {
+        city: { type: "string" },
+      },
     },
-    {
-        handler: async ({ city }) => ({ city, tempC: 18, condition: "cloudy" }),
-    },
+  },
+  {
+    handler: async ({ city }) => ({ city, tempC: 18, condition: "cloudy" }),
+  },
 );
 
 await weather.execute({ city: "Bogota" });
@@ -102,7 +102,7 @@ await weather.execute({ city: "Bogota" });
 import { Tool } from "@jm3s4/agentrc";
 
 const lookup = new Tool(
-    `
+  `
 name: lookup-account
 description: Looks up customer account status by email address.
 inputSchema:
@@ -120,10 +120,10 @@ execution:
     Authorization: Bearer {{env.API_KEY}}
   timeoutMs: 5000
 `,
-    {
-        env: { API_KEY: process.env.API_KEY! },
-        security: { allowedHosts: ["api.example.com"] },
-    },
+  {
+    env: { API_KEY: process.env.API_KEY! },
+    security: { allowedHosts: ["api.example.com"] },
+  },
 );
 
 await lookup.execute({ email: "ada@example.com" });
@@ -139,13 +139,13 @@ HTTP dispatch rejects protocols other than HTTP/HTTPS, disables redirects (`redi
 import { MemoryFileSystem, Skill } from "@jm3s4/agentrc";
 
 const files = new MemoryFileSystem({
-    "SKILL.md": `---
+  "SKILL.md": `---
 name: triage
 description: Classify incoming support tickets by urgency.
 ---
 Check billing outages before routing to tier 1 support.
 `,
-    "references/matrix.md": "# Priority Matrix\nP1: Service down",
+  "references/matrix.md": "# Priority Matrix\nP1: Service down",
 });
 
 const skill = await Skill.load(files);
@@ -177,8 +177,8 @@ import { Agent, Skill } from "@jm3s4/agentrc";
 import { NodeFileSystem } from "@jm3s4/agentrc/node";
 
 const agent = await Agent.load(new NodeFileSystem("./agents/support-bot"), {
-    env: { API_KEY: process.env.API_KEY! },
-    security: { allowedHosts: ["api.example.com"] },
+  env: { API_KEY: process.env.API_KEY! },
+  security: { allowedHosts: ["api.example.com"] },
 });
 
 const summaries = await Skill.discover(new NodeFileSystem("./skills"));
@@ -190,12 +190,12 @@ const summaries = await Skill.discover(new NodeFileSystem("./skills"));
 import { Agent, MemoryFileSystem } from "@jm3s4/agentrc";
 
 const base = await Agent.load(
-    new MemoryFileSystem({
-        "AGENT.md": agentMd,
-        "tools/lookup-account.yaml": toolYaml,
-        "skills/triage/SKILL.md": skillMd,
-        "skills/triage/references/matrix.md": "# Matrix",
-    }),
+  new MemoryFileSystem({
+    "AGENT.md": agentMd,
+    "tools/lookup-account.yaml": toolYaml,
+    "skills/triage/SKILL.md": skillMd,
+    "skills/triage/references/matrix.md": "# Matrix",
+  }),
 );
 
 // Bind per tenant or per request without mutating `base`
@@ -208,17 +208,17 @@ const tenantAgent = base.configure({ env: tenantEnv });
 import { Agent, type FileSystem, Skill, Tool } from "@jm3s4/agentrc";
 
 function createSkillFiles(skillId: string): FileSystem {
-    return {
-        read: (path) => bucket.getObject(`skills/${skillId}/${path}`),
-        list: async (prefix = "") => {
-            const pattern = prefix ? `${prefix}/%` : "%";
-            const rows = await sql<{ path: string }[]>`
+  return {
+    read: (path) => bucket.getObject(`skills/${skillId}/${path}`),
+    list: async (prefix = "") => {
+      const pattern = prefix ? `${prefix}/%` : "%";
+      const rows = await sql<{ path: string }[]>`
                 select path from skill_files
                 where skill_id = ${skillId} and path like ${pattern}
             `;
-            return rows.map((row) => row.path);
-        },
-    };
+      return rows.map((row) => row.path);
+    },
+  };
 }
 
 const agentRow = await sql.one`
@@ -232,24 +232,24 @@ const skillRows = await sql`
 `;
 
 const agent = new Agent(
-    { ...agentRow.manifest, instructions: agentRow.instructions },
-    {
-        tools: toolRows.map((row) => new Tool(row.definition)),
-        skills: skillRows.map(
-            (row) =>
-                new Skill(
-                    {
-                        name: row.name,
-                        description: row.description,
-                        instructions: row.instructions,
-                        metadata: row.metadata,
-                    },
-                    { files: createSkillFiles(row.id) },
-                ),
+  { ...agentRow.manifest, instructions: agentRow.instructions },
+  {
+    tools: toolRows.map((row) => new Tool(row.definition)),
+    skills: skillRows.map(
+      (row) =>
+        new Skill(
+          {
+            name: row.name,
+            description: row.description,
+            instructions: row.instructions,
+            metadata: row.metadata,
+          },
+          { files: createSkillFiles(row.id) },
         ),
-        env: tenantEnv,
-        security: { allowedHosts: ["api.example.com"] },
-    },
+    ),
+    env: tenantEnv,
+    security: { allowedHosts: ["api.example.com"] },
+  },
 );
 ```
 
@@ -262,33 +262,33 @@ import { dynamicTool, isStepCount, jsonSchema, ToolLoopAgent } from "ai";
 const built = agent.buildInstructions({ variables: { tenantId: "clinic-12" } });
 
 const tools = Object.fromEntries(
-    agent.tools.map((t) => [
-        t.name,
-        dynamicTool({
-            description: t.description,
-            inputSchema: jsonSchema(t.inputSchema),
-            execute: async (input, { abortSignal }) => {
-                try {
-                    return await t.execute(input as Record<string, unknown>, { signal: abortSignal });
-                } catch (error) {
-                    if (error instanceof HttpError) {
-                        return { isError: true, status: error.status, message: error.message };
-                    }
-                    if (error instanceof ValidationError || error instanceof ParseError) {
-                        return { isError: true, message: error.message };
-                    }
-                    throw error;
-                }
-            },
-        }),
-    ]),
+  agent.tools.map((t) => [
+    t.name,
+    dynamicTool({
+      description: t.description,
+      inputSchema: jsonSchema(t.inputSchema),
+      execute: async (input, { abortSignal }) => {
+        try {
+          return await t.execute(input as Record<string, unknown>, { signal: abortSignal });
+        } catch (error) {
+          if (error instanceof HttpError) {
+            return { isError: true, status: error.status, message: error.message };
+          }
+          if (error instanceof ValidationError || error instanceof ParseError) {
+            return { isError: true, message: error.message };
+          }
+          throw error;
+        }
+      },
+    }),
+  ]),
 );
 
 const runner = new ToolLoopAgent({
-    model: provider(agent.model.id),
-    instructions: built.toString(),
-    tools,
-    stopWhen: isStepCount(agent.runtime.maxSteps),
+  model: provider(agent.model.id),
+  instructions: built.toString(),
+  tools,
+  stopWhen: isStepCount(agent.runtime.maxSteps),
 });
 ```
 

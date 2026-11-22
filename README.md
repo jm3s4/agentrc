@@ -65,7 +65,7 @@ This is done to optimize token caching.
 
 ## Tools
 
-`Tool` validates `inputSchema` on creation and checks arguments with Ajv before running. Tools also accept an optional `metadata` record with arbitrary values (defaults to `{}`). It is exposed as `tool.metadata`, accepted on inline tools in `AGENT.md`, and preserved through `toJSON()` / `toString()`:
+`Tool` validates `inputSchema` on creation and checks arguments with Ajv before running. Tools also accept an optional `metadata` record with arbitrary values (defaults to `{}`). It's exposed as `tool.metadata`, accepted on inline tools in `AGENT.md`, and preserved through `toJSON()` / `toString()`:
 
 ```ts
 const tagged = new Tool({

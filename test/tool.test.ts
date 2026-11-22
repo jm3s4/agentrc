@@ -29,6 +29,26 @@ describe('Tool', () => {
         expect(reparsed.toJSON()).toEqual(fromYaml.toJSON());
     });
 
+    test('exposes metadata, defaults it to an empty object, and round-trips it', () => {
+        const tool = new Tool(`
+name: tagged-tool
+description: Carries arbitrary tool metadata.
+inputSchema:
+  type: object
+metadata:
+  owner: platform
+  retries: 2
+  tags: [internal, stable]
+`);
+
+        expect(tool.metadata).toEqual({ owner: 'platform', retries: 2, tags: ['internal', 'stable'] });
+        expect(new Tool(tool.toJSON()).metadata).toEqual(tool.metadata);
+        expect(new Tool(tool.toString()).toJSON()).toEqual(tool.toJSON());
+
+        const plain = new Tool({ name: 'plain-tool', description: 'No metadata provided.', inputSchema: {} });
+        expect(plain.metadata).toEqual({});
+    });
+
     test('rejects invalid definitions and broken JSON Schemas', () => {
         expect(() => new Tool({ name: 'BAD_NAME', description: 'Valid description.', inputSchema: {} })).toThrow(
             ValidationError,
@@ -37,6 +57,9 @@ describe('Tool', () => {
             () => new Tool({ name: 'bad-schema', description: 'Valid description.', inputSchema: { type: 'bogus' } }),
         ).toThrow(ValidationError);
         expect(() => new Tool('name: [unclosed')).toThrow(ParseError);
+        expect(
+            () => new Tool('name: bad-metadata\ndescription: Valid description.\ninputSchema: {}\nmetadata: nope\n'),
+        ).toThrow(ValidationError);
     });
 
     test('validates arguments with Ajv before execution', async () => {

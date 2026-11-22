@@ -109,6 +109,7 @@ export const ToolSchema = v.strictObject({
     inputSchema: JsonSchemaSchema,
     execution: v.optional(HttpExecutionSchema),
     requiresApproval: v.optional(v.boolean()),
+    metadata: v.optional(v.record(v.string(), v.unknown()), () => ({})),
 });
 
 export type ToolDefinition = v.InferOutput<typeof ToolSchema>;

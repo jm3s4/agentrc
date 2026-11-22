@@ -93,6 +93,8 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
     readonly execution: HttpExecution | undefined;
     /** Require explicit human approval before executing this tool. */
     readonly requiresApproval: boolean;
+    /** Arbitrary application-defined metadata. */
+    readonly metadata: Readonly<Record<string, unknown>>;
 
     readonly #definition: ToolDefinition;
     readonly #handler: ToolHandler<TArgs, TResult> | undefined;
@@ -125,6 +127,7 @@ export class Tool<TArgs = Record<string, unknown>, TResult = unknown> {
         this.inputSchema = definition.inputSchema;
         this.execution = definition.execution;
         this.requiresApproval = definition.requiresApproval ?? false;
+        this.metadata = definition.metadata;
     }
 
     /**

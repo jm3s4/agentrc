@@ -18,6 +18,8 @@ tools:
   - ./tools/lookup.yaml
   - name: echo
     description: Echoes input text cleanly.
+    metadata:
+      team: support
     inputSchema:
       type: object
       required: [text]
@@ -37,6 +39,7 @@ describe('Agent', () => {
         expect(fromMd.name).toBe('support-bot');
         expect(fromMd.model.reasoningEffort).toBe('xhigh');
         expect(fromMd.getTool('echo')?.name).toBe('echo');
+        expect(fromMd.getTool('echo')?.metadata).toEqual({ team: 'support' });
         expect(fromJson.toJSON()).toEqual(fromMd.toJSON());
         expect(reparsed.toJSON()).toEqual(fromMd.toJSON());
     });

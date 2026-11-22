@@ -6,8 +6,6 @@
 
 TypeScript library for parsing, validating, and loading agent definitions (`AGENT.md`), skills (`SKILL.md`), and declarative tools.
 
-`@jm3s4/agentrc` uses Web APIs only. Local disk helpers live in `@jm3s4/agentrc/node`.
-
 ## Installation
 
 ```sh
@@ -67,7 +65,18 @@ This is done to optimize token caching.
 
 ## Tools
 
-`Tool` validates `inputSchema` on creation and checks arguments with Ajv before running.
+`Tool` validates `inputSchema` on creation and checks arguments with Ajv before running. Tools also accept an optional `metadata` record with arbitrary values (defaults to `{}`). It is exposed as `tool.metadata`, accepted on inline tools in `AGENT.md`, and preserved through `toJSON()` / `toString()`:
+
+```ts
+const tagged = new Tool({
+  name: "get-weather",
+  description: "Get the current weather for a city.",
+  inputSchema: { type: "object" },
+  metadata: { owner: "platform", retries: 2 },
+});
+
+tagged.metadata; // { owner: "platform", retries: 2 }
+```
 
 ### Programmatic handlers
 
